@@ -28,10 +28,6 @@ interface CalendarCardContentProps {
 export function CalendarCardInner() {
   const { loading, refreshing } = useCalendar();
   
-  if (loading) {
-    return <div class="calendar-loading">Loading...</div>;
-  }
-  
   return (
     <>
       {refreshing && !loading && (
@@ -39,7 +35,11 @@ export function CalendarCardInner() {
       )}
       <MonthGrid />
       <div class="calendar-divider">
-        <EventList />
+        {loading ? (
+          <div class="calendar-loading">Loading...</div>
+        ) : (
+          <EventList />
+        )}
       </div>
     </>
   );

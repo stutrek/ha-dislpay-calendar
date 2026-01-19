@@ -412,6 +412,7 @@ export function useMultiCalendarEvents(
   const store = useHAStore();
   const { getHass } = useHass();
   const [events, setEvents] = useState<CalendarEventWithSource[] | undefined>(undefined);
+  const [eventsDateRangeKey, setEventsDateRangeKey] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
   
@@ -424,8 +425,17 @@ export function useMultiCalendarEvents(
   // Debounce timer for entity change triggers
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
+  // Cache for previously loaded date ranges
+  const cacheRef = useRef<Map<string, CalendarEventWithSource[]>>(new Map());
+  
+  // Flag to indicate cache should be cleared when next fetch completes
+  const shouldInvalidateCacheRef = useRef(false);
+  
   // Stable serialization of entityIds for dependency tracking
   const entityIdsKey = entityIds.join(',');
+  
+  // Cache key for current date range
+  const dateRangeKey = `${options.start.getTime()}-${options.end.getTime()}`;
 
   const fetchAllEvents = useCallbackStable(async () => {
     const hass = getHass();
@@ -480,7 +490,15 @@ export function useMultiCalendarEvents(
       if (fetchId === fetchIdRef.current) {
         // Flatten all events into a single array
         const allEvents = results.flat();
+        // Clear cache if this was an invalidating fetch (entity changed)
+        if (shouldInvalidateCacheRef.current) {
+          cacheRef.current.clear();
+          shouldInvalidateCacheRef.current = false;
+        }
+        // Cache the results for this date range
+        cacheRef.current.set(dateRangeKey, allEvents);
         setEvents(allEvents);
+        setEventsDateRangeKey(dateRangeKey);
       }
     } catch (err) {
       if (fetchId === fetchIdRef.current) {
@@ -495,20 +513,32 @@ export function useMultiCalendarEvents(
     }
   });
 
-  // Debounced refetch for entity changes
+  // Debounced refetch for entity changes (invalidates cache once new data arrives)
   const debouncedRefetch = useCallbackStable(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     debounceTimerRef.current = setTimeout(() => {
+      // Mark cache for invalidation (cleared when new data arrives)
+      shouldInvalidateCacheRef.current = true;
       fetchAllEvents();
     }, 500); // 500ms debounce
   });
 
   // Fetch when dependencies change (immediate, not debounced)
+  // Skip fetch if we have valid cached data - entity changes will invalidate cache
   useEffect(() => {
-    fetchAllEvents();
-  }, [entityIdsKey, options.start.getTime(), options.end.getTime(), fetchAllEvents]);
+    const cached = cacheRef.current.get(dateRangeKey);
+    // Fetch if: no cache, OR cache is marked for invalidation (entity changed)
+    if (!cached || shouldInvalidateCacheRef.current) {
+      fetchAllEvents();
+    }
+  }, [entityIdsKey, dateRangeKey, fetchAllEvents]);
+
+  // Invalidate cache when calendar entities change
+  useEffect(() => {
+    shouldInvalidateCacheRef.current = true;
+  }, [entityIdsKey]);
 
   // Subscribe to entity changes and refetch (debounced)
   useEffect(() => {
@@ -523,12 +553,20 @@ export function useMultiCalendarEvents(
     };
   }, [entityIdsKey, store, debouncedRefetch]);
 
-  // loading = true only on initial load (no events yet)
-  const loading = events === undefined && refreshing;
+  // Synchronously check cache for current date range (avoids flash on navigation)
+  // This runs during render, so cached data is available immediately
+  const cachedEvents = cacheRef.current.get(dateRangeKey);
+  
+  // Use cached data if available, otherwise use fetched state only if it matches current date range
+  // This prevents showing stale data from a different month
+  const fetchedEventsForRange = eventsDateRangeKey === dateRangeKey ? events : undefined;
+  const effectiveEvents = cachedEvents ?? fetchedEventsForRange;
+  
+  // loading = true only when we have no data (not cached, not fetched)
+  const loading = effectiveEvents === undefined && refreshing;
 
-  return { events, loading, refreshing, error, refetch: fetchAllEvents };
+  return { events: effectiveEvents, loading, refreshing, error, refetch: fetchAllEvents };
 }
-
 // ============================================================================
 // Weather Forecast Hook
 // ============================================================================
