@@ -3,31 +3,32 @@ import { useCalendar, formatTimeRange, type EnrichedEvent } from './CalendarCont
 // CSS is imported via shadow DOM styles or storybook
 // import './EventList.css';
 
-// Weather condition to emoji mapping (for Storybook / non-HA environments)
-const WEATHER_EMOJI: Record<string, string> = {
-  sunny: '☀️',
-  'clear-night': '🌙',
-  cloudy: '☁️',
-  partlycloudy: '⛅',
-  'partlycloudy-night': '⛅',
-  rainy: '🌧️',
-  snowy: '❄️',
-  'snowy-rainy': '🌨️',
-  fog: '🌫️',
-  hail: '🌨️',
-  lightning: '⚡',
-  'lightning-rainy': '⛈️',
-  windy: '💨',
-  'windy-variant': '💨',
-  exceptional: '⚠️',
+// Weather condition to MDI icon mapping
+const WEATHER_ICONS: Record<string, string> = {
+  sunny: 'mdi:weather-sunny',
+  'clear-night': 'mdi:weather-night',
+  cloudy: 'mdi:weather-cloudy',
+  partlycloudy: 'mdi:weather-partly-cloudy',
+  'partlycloudy-night': 'mdi:weather-night-partly-cloudy',
+  rainy: 'mdi:weather-rainy',
+  pouring: 'mdi:weather-pouring',
+  snowy: 'mdi:weather-snowy',
+  'snowy-rainy': 'mdi:weather-snowy-rainy',
+  fog: 'mdi:weather-fog',
+  hail: 'mdi:weather-hail',
+  lightning: 'mdi:weather-lightning',
+  'lightning-rainy': 'mdi:weather-lightning-rainy',
+  windy: 'mdi:weather-windy',
+  'windy-variant': 'mdi:weather-windy-variant',
+  exceptional: 'mdi:alert-circle-outline',
 };
 
 function WeatherDisplay({ condition, temperature }: { condition: string; temperature: number }) {
-  const emoji = WEATHER_EMOJI[condition] ?? '🌡️';
+  const icon = WEATHER_ICONS[condition] ?? 'mdi:thermometer';
   
   return (
     <span class="event-weather">
-      <span class="weather-icon">{emoji}</span>
+      <ha-icon icon={icon} class="weather-icon" />
       <span class="weather-temp">{Math.round(temperature)}°</span>
     </span>
   );

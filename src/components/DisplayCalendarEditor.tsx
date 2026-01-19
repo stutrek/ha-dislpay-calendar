@@ -4,25 +4,7 @@ import { DEFAULT_COLORS, type CalendarConfig, type CalendarConfigItem } from './
 import type { HomeAssistant } from '../HAContext';
 import { useCallbackStable } from '../useCallbackStable';
 
-// ============================================================================
-// Type Declarations for HA Custom Elements
-// ============================================================================
-
-declare module 'preact' {
-  namespace JSX {
-    interface IntrinsicElements {
-      'ha-select': preact.JSX.HTMLAttributes<HTMLElement> & {
-        label?: string;
-        value?: string;
-        naturalMenuWidth?: boolean;
-        fixedMenuPosition?: boolean;
-      };
-      'ha-list-item': preact.JSX.HTMLAttributes<HTMLElement> & {
-        value?: string;
-      };
-    }
-  }
-}
+// Type declarations for HA elements are in ../ha-elements.d.ts
 
 // ============================================================================
 // Types
