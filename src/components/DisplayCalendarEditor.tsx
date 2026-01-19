@@ -23,6 +23,7 @@ interface EditorProps {
 function CalendarEditorContent({ hass, config, onConfigChanged }: EditorProps) {
   const [calendars, setCalendars] = useState<CalendarConfigItem[]>(config.calendars ?? []);
   const [weatherEntity, setWeatherEntity] = useState<string>(config.weatherEntity ?? '');
+  const [fontSize, setFontSize] = useState<string>(config.fontSize ?? '');
 
   // Get available entities from hass
   const calendarEntities = Object.keys(hass.states).filter(e => e.startsWith('calendar.'));
@@ -32,9 +33,14 @@ function CalendarEditorContent({ hass, config, onConfigChanged }: EditorProps) {
   useEffect(() => {
     setCalendars(config.calendars ?? []);
     setWeatherEntity(config.weatherEntity ?? '');
+    setFontSize(config.fontSize ?? '');
   }, [config]);
 
-  const fireConfigChanged = useCallbackStable((newCalendars: CalendarConfigItem[], newWeather: string) => {
+  const fireConfigChanged = useCallbackStable((
+    newCalendars: CalendarConfigItem[], 
+    newWeather: string,
+    newFontSize: string
+  ) => {
     // Only include calendars with valid entity IDs in the saved config
     const validCalendars = newCalendars.filter(cal => cal.entityId && cal.entityId.startsWith('calendar.'));
     const newConfig = {
@@ -43,6 +49,7 @@ function CalendarEditorContent({ hass, config, onConfigChanged }: EditorProps) {
       ...(newWeather && newWeather.startsWith('weather.') 
         ? { weatherEntity: newWeather as `weather.${string}` } 
         : { weatherEntity: undefined }),
+      ...(newFontSize ? { fontSize: newFontSize } : { fontSize: undefined }),
     };
     onConfigChanged(newConfig);
   });
@@ -62,7 +69,7 @@ function CalendarEditorContent({ hass, config, onConfigChanged }: EditorProps) {
   const removeCalendar = useCallbackStable((index: number) => {
     const newCalendars = calendars.filter((_, i) => i !== index);
     setCalendars(newCalendars);
-    fireConfigChanged(newCalendars, weatherEntity);
+    fireConfigChanged(newCalendars, weatherEntity, fontSize);
   });
 
   const updateCalendarEntity = useCallbackStable((index: number, entityId: string) => {
@@ -70,7 +77,7 @@ function CalendarEditorContent({ hass, config, onConfigChanged }: EditorProps) {
       i === index ? { ...cal, entityId: entityId as `calendar.${string}` } : cal
     );
     setCalendars(newCalendars);
-    fireConfigChanged(newCalendars, weatherEntity);
+    fireConfigChanged(newCalendars, weatherEntity, fontSize);
   });
 
   const updateCalendarColor = useCallbackStable((index: number, color: string) => {
@@ -78,12 +85,17 @@ function CalendarEditorContent({ hass, config, onConfigChanged }: EditorProps) {
       i === index ? { ...cal, color } : cal
     );
     setCalendars(newCalendars);
-    fireConfigChanged(newCalendars, weatherEntity);
+    fireConfigChanged(newCalendars, weatherEntity, fontSize);
   });
 
   const updateWeatherEntity = useCallbackStable((entityId: string) => {
     setWeatherEntity(entityId);
-    fireConfigChanged(calendars, entityId);
+    fireConfigChanged(calendars, entityId, fontSize);
+  });
+
+  const updateFontSize = useCallbackStable((newFontSize: string) => {
+    setFontSize(newFontSize);
+    fireConfigChanged(calendars, weatherEntity, newFontSize);
   });
 
   const handleCalendarSelect = useCallbackStable((index: number, e: Event) => {
@@ -159,6 +171,23 @@ function CalendarEditorContent({ hass, config, onConfigChanged }: EditorProps) {
             </ha-list-item>
           ))}
         </ha-select>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span>Appearance</span>
+        </div>
+        <div class="input-row">
+          <label for="font-size">Font Size</label>
+          <input
+            id="font-size"
+            type="text"
+            class="text-input"
+            placeholder="e.g., 14px, 1rem"
+            value={fontSize}
+            onChange={(e) => updateFontSize((e.target as HTMLInputElement).value)}
+          />
+        </div>
       </div>
     </div>
   );
@@ -256,6 +285,37 @@ const editorStyles = `
   
   ha-select {
     display: block;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .input-row label {
+    color: var(--primary-text-color);
+    font-size: 14px;
+    min-width: 80px;
+  }
+
+  .text-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--divider-color);
+    border-radius: 4px;
+    background: var(--card-background-color, #fff);
+    color: var(--primary-text-color);
+    font-size: 14px;
+  }
+
+  .text-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  .text-input::placeholder {
+    color: var(--secondary-text-color);
   }
 `;
 

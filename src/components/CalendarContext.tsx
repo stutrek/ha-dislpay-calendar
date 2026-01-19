@@ -44,12 +44,14 @@ export interface NormalizedCalendarConfigItem {
 export interface CalendarConfig {
   calendars: CalendarConfigItem[];
   weatherEntity?: `weather.${string}`;
+  fontSize?: string; // e.g., "14px", "1rem"
 }
 
 /** Config with colors guaranteed (after normalization) */
 export interface NormalizedCalendarConfig {
   calendars: NormalizedCalendarConfigItem[];
   weatherEntity?: `weather.${string}`;
+  fontSize?: string;
 }
 
 /**

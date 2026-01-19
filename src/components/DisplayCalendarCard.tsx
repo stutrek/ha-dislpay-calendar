@@ -46,7 +46,7 @@ function CalendarCardContent({ config, hass }: CalendarCardContentProps) {
   return (
     <>
       <style>{getAllStyles()}</style>
-      <div class="calendar-card">
+      <div class="calendar-card" style={config.fontSize ? { fontSize: config.fontSize } : undefined}>
         <HAProvider hass={hass}>
           <CalendarProvider config={config}>
             <CalendarCardInner />
@@ -101,7 +101,7 @@ class DisplayCalendarCard extends HTMLElement {
       render(
         <>
           <style>{getAllStyles()}</style>
-          <div class="calendar-card">
+          <div class="calendar-card" style={this._config.fontSize ? { fontSize: this._config.fontSize } : undefined}>
             <div class="calendar-loading">Add a calendar to get started</div>
           </div>
         </>,

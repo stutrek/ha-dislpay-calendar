@@ -3,7 +3,7 @@ import { css } from './styleRegistry';
 export const eventListStyles = css`
 .event-list {
   font-family: system-ui, -apple-system, sans-serif;
-  padding: 0.5rem;
+  padding: 0.25rem;
 }
 
 .event-list-empty {
@@ -16,13 +16,9 @@ export const eventListStyles = css`
 .event-item {
   display: flex;
   align-items: stretch;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
-  min-height: 2.5rem;
-}
-
-.event-item + .event-item {
-  border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+  gap: 0.25rem;
+  padding: 0.125rem 0;
+  min-height: 1.5rem;
 }
 
 /* Color bars on left edge - full height of event */

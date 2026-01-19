@@ -80,8 +80,8 @@ export function MonthGrid() {
       });
     }
 
-    // Next month's leading days (fill to 42 cells = 6 weeks)
-    const remaining = 42 - result.length;
+    // Next month's leading days (fill to complete the final week only)
+    const remaining = (7 - (result.length % 7)) % 7;
     for (let day = 1; day <= remaining; day++) {
       result.push({
         date: new Date(year, month + 1, day),

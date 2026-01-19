@@ -35,15 +35,20 @@ function CalendarWidget({
   events,
   hourlyForecast,
   initialDate,
+  fontSize,
 }: {
   config: CalendarConfig;
   events: CalendarEventWithSource[];
   hourlyForecast?: WeatherForecast[];
   initialDate?: Date;
+  fontSize?: string;
 }) {
+  // Merge fontSize into config
+  const mergedConfig = { ...config, fontSize: fontSize || config.fontSize };
+  
   return (
     <CalendarProvider
-      config={config}
+      config={mergedConfig}
       events={events}
       hourlyForecast={hourlyForecast}
       initialDate={initialDate}
@@ -55,6 +60,7 @@ function CalendarWidget({
         borderRadius: '12px',
         padding: '1rem',
         color: '#fff',
+        fontSize: mergedConfig.fontSize,
       }}>
         <MonthGrid />
         <div style={{ 
@@ -82,6 +88,10 @@ const meta: Meta<typeof CalendarWidget> = {
   },
   argTypes: {
     initialDate: { control: 'date' },
+    fontSize: { 
+      control: 'text',
+      description: 'Font size (e.g., 14px, 1rem)',
+    },
   },
 };
 
@@ -139,5 +149,27 @@ export const SingleCalendar: Story = {
     events: calendarEvents.filter(e => e.calendarId === 'calendar.family'),
     hourlyForecast: hourlyForecast as WeatherForecast[],
     initialDate: new Date('2026-01-18'),
+  },
+};
+
+// Small font size
+export const SmallFont: Story = {
+  args: {
+    config,
+    events: calendarEvents,
+    hourlyForecast: hourlyForecast as WeatherForecast[],
+    initialDate: new Date('2026-01-18'),
+    fontSize: '12px',
+  },
+};
+
+// Large font size
+export const LargeFont: Story = {
+  args: {
+    config,
+    events: calendarEvents,
+    hourlyForecast: hourlyForecast as WeatherForecast[],
+    initialDate: new Date('2026-01-18'),
+    fontSize: '18px',
   },
 };

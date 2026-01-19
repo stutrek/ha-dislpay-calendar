@@ -88,19 +88,19 @@ export const monthGridStyles = css`
 .days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 0;
 }
 
 .day-cell {
-  aspect-ratio: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: none;
   border: none;
+  line-height: 2;
+  height: 1.75rem;
   cursor: pointer;
-  padding: 0.25rem;
   border-radius: 4px;
   color: var(--primary-text-color, #fff);
   transition: background-color 0.15s;
@@ -124,8 +124,8 @@ export const monthGridStyles = css`
   background-color: var(--primary-color, #03a9f4);
   color: var(--text-primary-color, #fff);
   border-radius: 50%;
-  width: 1.75rem;
-  height: 1.75rem;
+  padding: 0.5rem;
+  margin: -0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -152,7 +152,7 @@ export const monthGridStyles = css`
   gap: 2px;
   margin-top: 2px;
   position: absolute;
-  bottom: 4px;
+  bottom: 2px;
 }
 
 .event-dot {
