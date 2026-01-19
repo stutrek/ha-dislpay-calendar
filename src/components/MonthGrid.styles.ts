@@ -15,13 +15,6 @@ export const monthGridStyles = css`
   margin-bottom: 0.5em;
 }
 
-.month-title-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25em;
-}
-
 .month-title {
   font-size: 1.25em;
   font-weight: 600;
@@ -30,14 +23,16 @@ export const monthGridStyles = css`
 
 .today-btn {
   font: inherit;
-  font-size: 0.6875em;
-  padding: 0.125em 0.5em;
+  font-size: 1em;
+  margin-left: 0.5em;
+  padding: 0.25em 0.75em;
   background: none;
   border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.3));
   border-radius: 4px;
   color: var(--secondary-text-color, #aaa);
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
+  vertical-align: middle;
 }
 
 .today-btn:hover {

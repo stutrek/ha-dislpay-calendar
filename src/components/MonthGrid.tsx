@@ -12,9 +12,9 @@ function getDayAbbreviations(): string[] {
   });
 }
 
-// Get localized month name
-function getMonthName(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, { month: 'long' }).format(date);
+// Get localized month name (long or short)
+function getMonthName(date: Date, short = false): string {
+  return new Intl.DateTimeFormat(undefined, { month: short ? 'short' : 'long' }).format(date);
 }
 
 interface DayCell {
@@ -53,9 +53,18 @@ export function MonthGrid() {
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
+  // Check if we're viewing today (selected day is today AND month view contains today)
+  const isViewingToday = isSameDay(selectedDay, today) && 
+    currentMonth.getMonth() === today.getMonth() &&
+    currentMonth.getFullYear() === today.getFullYear();
+
   // Get localized day abbreviations (memoized)
   const dayAbbreviations = useMemo(() => getDayAbbreviations(), []);
-  const monthName = useMemo(() => getMonthName(currentMonth), [currentMonth]);
+  // Use short month name when showing Today button, full name otherwise
+  const monthName = useMemo(
+    () => getMonthName(currentMonth, !isViewingToday), 
+    [currentMonth, isViewingToday]
+  );
 
   // Build grid of day cells (6 weeks × 7 days)
   const cells = useMemo<DayCell[]>(() => {
@@ -98,14 +107,15 @@ export function MonthGrid() {
         <button class="month-nav" onClick={prevMonth} aria-label="Previous month">
           ‹
         </button>
-        <div class="month-title-group">
-          <span class="month-title">
-            {monthName} {year}
-          </span>
+        <span class="month-title">
+          {monthName} {year}
+        </span>
+        {!isViewingToday && (
           <button class="today-btn" onClick={goToToday} aria-label="Go to today">
             Today
           </button>
-        </div>
+        )}
+
         <button class="month-nav" onClick={nextMonth} aria-label="Next month">
           ›
         </button>

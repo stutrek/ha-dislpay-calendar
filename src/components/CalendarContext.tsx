@@ -1,5 +1,5 @@
 import { createContext } from 'preact';
-import { useContext, useState, useMemo } from 'preact/hooks';
+import { useContext, useState, useMemo, useEffect } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { useCallbackStable } from '../useCallbackStable';
 import {
@@ -419,6 +419,26 @@ export function CalendarProvider({
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     setSelectedDay(todayDate);
   });
+  
+  // Auto-return to today after 2 minutes of being away from today
+  useEffect(() => {
+    const isViewingToday = 
+      selectedDay.getFullYear() === today.getFullYear() &&
+      selectedDay.getMonth() === today.getMonth() &&
+      selectedDay.getDate() === today.getDate() &&
+      currentMonth.getMonth() === today.getMonth() &&
+      currentMonth.getFullYear() === today.getFullYear();
+    
+    if (isViewingToday) {
+      return; // No timer needed when viewing today
+    }
+    
+    const timer = setTimeout(() => {
+      goToToday();
+    }, 2 * 60 * 1000); // 2 minutes
+    
+    return () => clearTimeout(timer);
+  }, [selectedDay, currentMonth, today, goToToday]);
   
   const value = useMemo<CalendarContextValue>(() => ({
     config,
