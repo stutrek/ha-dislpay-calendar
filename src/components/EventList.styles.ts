@@ -44,11 +44,11 @@ export const eventListStyles = css`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.125em;
 }
 
 .event-time {
   font-size: 0.75em;
+  line-height: 1;
   font-weight: 600;
   color: var(--secondary-text-color, #aaa);
   font-variant-numeric: tabular-nums;
