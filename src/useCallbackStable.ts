@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect } from 'preact/hooks';
+import { useRef } from 'preact/hooks';
 
 /**
  * Creates a stable callback reference that always calls the latest version of the callback.
@@ -12,10 +12,7 @@ export function useCallbackStable<T extends (...args: never[]) => unknown>(
 ): T {
   const callbackRef = useRef<T>(callback);
 
-  // Update the ref synchronously before any effects run
-  useLayoutEffect(() => {
-    callbackRef.current = callback;
-  });
+  callbackRef.current = callback;
 
   // Create a stable function reference once
   const stableRef = useRef<T | null>(null);
