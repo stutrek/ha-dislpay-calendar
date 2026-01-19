@@ -11,7 +11,7 @@ export const monthGridStyles = css`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5em;
+  padding: 0;
   margin-bottom: 0.5em;
 }
 
@@ -56,7 +56,7 @@ export const monthGridStyles = css`
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.25em 0.75em;
+  padding: 0.25em;
   color: var(--primary-text-color, #fff);
   border-radius: 4px;
   transition: background-color 0.15s;
