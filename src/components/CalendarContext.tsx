@@ -400,22 +400,36 @@ export function CalendarProvider({
     return sortEvents(dayEvents);
   }, [allEvents, selectedDay]);
   
-  // Get unique colors for events on a given day (for dots on calendar)
-  const getColorsForDay = useCallbackStable((day: Date): string[] => {
-    const colors = new Set<string>();
+  // Pre-compute colors for each day to avoid O(days × events) in render
+  const colorsByDay = useMemo(() => {
+    const map = new Map<string, Set<string>>();
     for (const event of allEvents) {
       const start = parseEventDate(event.start);
       const end = parseEventDate(event.end);
-      const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-      const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
-      
-      if (start < dayEnd && end > dayStart) {
+      // Iterate through each day the event spans
+      const current = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      while (current <= endDay) {
+        const key = `${current.getFullYear()}-${current.getMonth()}-${current.getDate()}`;
+        if (!map.has(key)) map.set(key, new Set());
         for (const color of event.colors) {
-          colors.add(color);
+          map.get(key)!.add(color);
         }
+        current.setDate(current.getDate() + 1);
       }
     }
-    return [...colors];
+    // Convert Sets to arrays
+    const result = new Map<string, string[]>();
+    for (const [key, colors] of map) {
+      result.set(key, [...colors]);
+    }
+    return result;
+  }, [allEvents]);
+
+  // Get unique colors for events on a given day (for dots on calendar)
+  const getColorsForDay = useCallbackStable((day: Date): string[] => {
+    const key = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+    return colorsByDay.get(key) ?? [];
   });
   
   const nextMonth = useCallbackStable(() => {
