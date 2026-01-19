@@ -395,7 +395,7 @@ export function CalendarProvider({
       const end = parseEventDate(event.end);
       const dayStart = new Date(selectedDay.getFullYear(), selectedDay.getMonth(), selectedDay.getDate());
       const dayEnd = new Date(selectedDay.getFullYear(), selectedDay.getMonth(), selectedDay.getDate() + 1);
-      return start < dayEnd && end > dayStart;
+      return start <= dayEnd && end >= dayStart;
     });
     return sortEvents(dayEvents);
   }, [allEvents, selectedDay]);
