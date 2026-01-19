@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/preact';
 import { CalendarProvider, type CalendarConfig, type CalendarEventWithSource, type WeatherForecast, type FontSize } from '../components/CalendarContext';
-import { MonthGrid } from '../components/MonthGrid';
-import { EventList } from '../components/EventList';
+import { CalendarCardInner } from '../components/DisplayCalendarCard';
 import { getAllStyles } from '../components/styleRegistry';
 // Import component styles to register them
 import '../components/DisplayCalendarCard.styles';
@@ -63,15 +62,8 @@ function CalendarWidget({
           color: '#fff',
         }}
       >
-        <MonthGrid />
-        <div style={{ 
-          borderTop: '1px solid rgba(255,255,255,0.1)', 
-          marginTop: '0.5em',
-          paddingTop: '0.5em',
-          width: '100%',
-        }}>
-          <EventList />
-        </div>
+
+        <CalendarCardInner />
       </div>
     </CalendarProvider>
   );

@@ -93,6 +93,7 @@ export interface CalendarContextValue {
   selectedDay: Date;
   today: Date;
   loading: boolean;
+  refreshing: boolean;
   nextMonth: () => void;
   prevMonth: () => void;
   goToToday: () => void;
@@ -344,11 +345,13 @@ export function CalendarProvider({
   let hookEvents: CalendarEventWithSource[] | undefined;
   let hookForecast: WeatherForecast[] | undefined;
   let hookLoading = false;
+  let hookRefreshing = false;
   
   try {
     const eventsResult = useMultiCalendarEvents(calendarEntityIds, dateRange);
     hookEvents = eventsResult.events;
     hookLoading = eventsResult.loading;
+    hookRefreshing = eventsResult.refreshing;
     
     if (config.weatherEntity) {
       const forecastResult = useWeatherForecast(config.weatherEntity, 'hourly');
@@ -364,6 +367,7 @@ export function CalendarProvider({
   const events = propEvents ?? hookEvents ?? [];
   const hourlyForecast = propForecast ?? hookForecast ?? [];
   const loading = propEvents ? false : hookLoading;
+  const refreshing = propEvents ? false : hookRefreshing;
   
   // Process all events (dedupe, enrich with colors and weather)
   const allEvents = useMemo(
@@ -464,13 +468,14 @@ export function CalendarProvider({
     selectedDay,
     today,
     loading,
+    refreshing,
     nextMonth,
     prevMonth,
     goToToday,
     selectDay,
     eventsForSelectedDay,
     getColorsForDay,
-  }), [config, currentMonth, selectedDay, today, loading, nextMonth, prevMonth, goToToday, selectDay, eventsForSelectedDay, getColorsForDay]);
+  }), [config, currentMonth, selectedDay, today, loading, refreshing, nextMonth, prevMonth, goToToday, selectDay, eventsForSelectedDay, getColorsForDay]);
   
   return (
     <CalendarContext.Provider value={value}>

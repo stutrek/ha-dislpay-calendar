@@ -25,8 +25,8 @@ interface CalendarCardContentProps {
   hass: HomeAssistant;
 }
 
-function CalendarCardInner() {
-  const { loading } = useCalendar();
+export function CalendarCardInner() {
+  const { loading, refreshing } = useCalendar();
   
   if (loading) {
     return <div class="calendar-loading">Loading...</div>;
@@ -34,6 +34,9 @@ function CalendarCardInner() {
   
   return (
     <>
+      {refreshing && !loading && (
+        <div class="calendar-refreshing">Checking for updates...</div>
+      )}
       <MonthGrid />
       <div class="calendar-divider">
         <EventList />

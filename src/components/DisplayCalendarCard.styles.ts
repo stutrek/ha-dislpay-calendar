@@ -10,6 +10,8 @@ export const cardStyles = css`
   border-radius: var(--ha-card-border-radius, 12px);
   padding: 1em;
   color: var(--primary-text-color, #fff);
+  font-family: system-ui, -apple-system, sans-serif;
+  position: relative;
 }
 
 .calendar-card.size-small {
@@ -34,5 +36,14 @@ export const cardStyles = css`
   text-align: center;
   padding: 2rem;
   color: var(--secondary-text-color, #888);
+}
+
+.calendar-refreshing {
+  position: absolute;
+  inset: 0.5em 0 0;
+  font-size: 0.625em;
+  color: var(--secondary-text-color, #888);
+  text-align: center;
+  padding-bottom: 0.5em;
 }
 `;

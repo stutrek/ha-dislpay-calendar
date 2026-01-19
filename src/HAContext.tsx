@@ -392,6 +392,7 @@ export function useCalendarEvents(
 interface UseMultiCalendarEventsResult {
   events: CalendarEventWithSource[] | undefined;
   loading: boolean;
+  refreshing: boolean;
   error: Error | undefined;
   refetch: () => void;
 }
@@ -408,13 +409,20 @@ export function useMultiCalendarEvents(
   entityIds: `calendar.${string}`[],
   options: { start: Date; end: Date }
 ): UseMultiCalendarEventsResult {
+  const store = useHAStore();
   const { getHass } = useHass();
   const [events, setEvents] = useState<CalendarEventWithSource[] | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
   
-  // Track current fetch to avoid race conditions
+  // Track current fetch to avoid race conditions on data updates
   const fetchIdRef = useRef(0);
+  
+  // Track in-flight request count for refreshing indicator
+  const inFlightCountRef = useRef(0);
+  
+  // Debounce timer for entity change triggers
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Stable serialization of entityIds for dependency tracking
   const entityIdsKey = entityIds.join(',');
@@ -432,7 +440,8 @@ export function useMultiCalendarEvents(
     }
 
     const fetchId = ++fetchIdRef.current;
-    setLoading(true);
+    inFlightCountRef.current++;
+    setRefreshing(true);
     setError(undefined);
 
     try {
@@ -467,27 +476,57 @@ export function useMultiCalendarEvents(
         })
       );
 
-      // Only update if this is still the latest fetch
+      // Only update data if this is still the latest fetch
       if (fetchId === fetchIdRef.current) {
         // Flatten all events into a single array
         const allEvents = results.flat();
         setEvents(allEvents);
-        setLoading(false);
       }
     } catch (err) {
       if (fetchId === fetchIdRef.current) {
         setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
+      }
+    } finally {
+      // Decrement in-flight count and clear refreshing only when all fetches complete
+      inFlightCountRef.current--;
+      if (inFlightCountRef.current === 0) {
+        setRefreshing(false);
       }
     }
   });
 
-  // Fetch when dependencies change
+  // Debounced refetch for entity changes
+  const debouncedRefetch = useCallbackStable(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      fetchAllEvents();
+    }, 500); // 500ms debounce
+  });
+
+  // Fetch when dependencies change (immediate, not debounced)
   useEffect(() => {
     fetchAllEvents();
   }, [entityIdsKey, options.start.getTime(), options.end.getTime(), fetchAllEvents]);
 
-  return { events, loading, error, refetch: fetchAllEvents };
+  // Subscribe to entity changes and refetch (debounced)
+  useEffect(() => {
+    const unsubscribes = entityIds.map(entityId => 
+      store.subscribe(entityId, debouncedRefetch)
+    );
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [entityIdsKey, store, debouncedRefetch]);
+
+  // loading = true only on initial load (no events yet)
+  const loading = events === undefined && refreshing;
+
+  return { events, loading, refreshing, error, refetch: fetchAllEvents };
 }
 
 // ============================================================================
