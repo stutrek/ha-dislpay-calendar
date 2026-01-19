@@ -301,10 +301,23 @@ export function CalendarProvider({
   // Normalize config to fill in missing colors
   const config = useMemo(() => normalizeConfig(rawConfig), [rawConfig]);
   
-  const today = useMemo(() => {
+  const [today, setToday] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }, []);
+  });
+  
+  // Update today at midnight
+  useEffect(() => {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const timer = setTimeout(() => {
+      setToday(new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate()));
+    }, msUntilMidnight);
+    
+    return () => clearTimeout(timer);
+  }, [today]); // Re-run after today updates to schedule next midnight
   
   const [currentMonth, setCurrentMonth] = useState(() => {
     const date = initialDate ?? today;
