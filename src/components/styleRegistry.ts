@@ -14,6 +14,16 @@ export const css = (strings: TemplateStringsArray, ...values: unknown[]): string
 };
 
 /**
+ * Register raw CSS string (e.g., from ?inline imports).
+ * Only registers if not already present.
+ */
+export function registerRawStyles(styles: string): void {
+  if (!styleRegistry.includes(styles)) {
+    styleRegistry.push(styles);
+  }
+}
+
+/**
  * Get all registered styles for Shadow DOM injection.
  */
 export function getAllStyles(): string {

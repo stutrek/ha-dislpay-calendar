@@ -126,6 +126,10 @@ export interface HomeAssistant {
   services: HassServices;
   connection: Connection;
   callService: (domain: string, service: string, data?: object) => Promise<void>;
+  themes?: {
+    darkMode?: boolean;
+    theme?: string;
+  };
 }
 
 type EntitySubscriber = () => void;

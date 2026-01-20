@@ -9,7 +9,7 @@ export const eventModalStyles = css`
   color: var(--primary-text-color, #fff);
   padding: 0;
   max-width: min(90vw, 800px);
-  max-height: 85vh;
+  max-height: 90vh;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
@@ -24,7 +24,7 @@ export const eventModalStyles = css`
 .event-modal-content {
   display: flex;
   flex-direction: column;
-  max-height: 85vh;
+  max-height: 90vh;
   overflow-y: auto;
 }
 

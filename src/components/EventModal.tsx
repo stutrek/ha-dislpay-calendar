@@ -3,6 +3,7 @@ import { useCallbackStable } from '../useCallbackStable';
 import { useHass } from '../HAContext';
 import { useGeocode } from './useGeocode';
 import { useCalendar, formatTimeRange, type EnrichedEvent } from './CalendarContext';
+import { LeafletMap } from './LeafletMap';
 import './EventModal.styles'; // registers styles
 
 // ============================================================================
@@ -38,49 +39,6 @@ function formatEventDate(event: EnrichedEvent): string {
   return `${start.toLocaleDateString(undefined, dateOptions)} · ${timeRange}`;
 }
 
-/**
- * Build OSM embed URL with markers for event location and home
- */
-function buildMapUrl(
-  eventLat: number,
-  eventLng: number,
-  homeLat?: number,
-  homeLng?: number
-): string {
-  // Calculate bounding box to show both markers (or just event if no home)
-  let minLat = eventLat;
-  let maxLat = eventLat;
-  let minLng = eventLng;
-  let maxLng = eventLng;
-  
-  if (homeLat !== undefined && homeLng !== undefined) {
-    minLat = Math.min(eventLat, homeLat);
-    maxLat = Math.max(eventLat, homeLat);
-    minLng = Math.min(eventLng, homeLng);
-    maxLng = Math.max(eventLng, homeLng);
-  }
-  
-  // Add padding to bounding box (about 20%)
-  const latPadding = Math.max((maxLat - minLat) * 0.3, 0.005);
-  const lngPadding = Math.max((maxLng - minLng) * 0.3, 0.005);
-  
-  const bbox = [
-    minLng - lngPadding,
-    minLat - latPadding,
-    maxLng + lngPadding,
-    maxLat + latPadding,
-  ].join(',');
-  
-  // OSM embed URL with event marker
-  // Note: OSM embed only supports one marker, so we show the event location
-  // Using 'hot' layer for simpler, cleaner design
-  const url = new URL('https://www.openstreetmap.org/export/embed.html');
-  url.searchParams.set('bbox', bbox);
-  url.searchParams.set('layer', 'hot');
-  url.searchParams.set('marker', `${eventLat},${eventLng}`);
-  
-  return url.toString();
-}
 
 // ============================================================================
 // Component
@@ -91,10 +49,11 @@ export function EventModal({ event, onClose }: EventModalProps) {
   const { getHass } = useHass();
   const { config } = useCalendar();
   
-  // Get home location from HA config
+  // Get home location and theme from HA config
   const hass = getHass();
   const homeLat = hass?.config?.latitude;
   const homeLng = hass?.config?.longitude;
+  const isDarkMode = hass?.themes?.darkMode ?? false;
   
   // Geocode the event location
   const { lat, lng, loading, notFound, refetch } = useGeocode(event.location);
@@ -138,7 +97,6 @@ export function EventModal({ event, onClose }: EventModalProps) {
   
   const hasLocation = Boolean(event.location);
   const hasCoords = lat !== null && lng !== null;
-  const mapUrl = hasCoords ? buildMapUrl(lat, lng, homeLat, homeLng) : null;
   
   return (
     <dialog
@@ -224,17 +182,19 @@ export function EventModal({ event, onClose }: EventModalProps) {
                 </div>
               )}
               
-              {!loading && hasCoords && mapUrl && (
+              {!loading && hasCoords && (
                 <>
                   <div class="event-modal-map-container">
-                    <iframe
-                      class="event-modal-map"
-                      src={mapUrl}
-                      title="Event location map"
+                    <LeafletMap
+                      eventLat={lat}
+                      eventLng={lng}
+                      homeLat={homeLat}
+                      homeLng={homeLng}
+                      isDarkMode={isDarkMode}
                     />
                   </div>
                   <div class="event-modal-attribution">
-                    © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
+                    © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>
                   </div>
                 </>
               )}

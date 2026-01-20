@@ -21,7 +21,9 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.21",
     "home-assistant-js-websocket": "^9.6.0",
+    "leaflet": "^1.9.4",
     "preact": "^10.27.2"
   },
   "devDependencies": {
