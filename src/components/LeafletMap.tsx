@@ -27,6 +27,11 @@ css`
   overflow: hidden;
 }
 
+/* the calendar is way too dark in dark mode, so we need to brighten it up */
+.leaflet-map-container.dark .leaflet-tile-pane {
+  filter: brightness(2.75);
+}
+
 /* Custom home marker styling */
 .home-marker {
   display: flex;
@@ -151,5 +156,5 @@ export function LeafletMap({ eventLat, eventLng, homeLat, homeLng, isDarkMode = 
     };
   }, [eventLat, eventLng, homeLat, homeLng, isDarkMode]);
   
-  return <div ref={containerRef} class="leaflet-map-container" />;
+  return <div ref={containerRef} class={`leaflet-map-container ${isDarkMode ? 'dark' : ''}`} />;
 }
