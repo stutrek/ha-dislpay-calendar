@@ -409,6 +409,10 @@ export function CalendarProvider({
       // Iterate through each day the event spans
       const current = new Date(start.getFullYear(), start.getMonth(), start.getDate());
       const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      // For all-day events, end date is exclusive (next day), so subtract 1
+      if (event.isAllDay) {
+        endDay.setDate(endDay.getDate() - 1);
+      }
       while (current <= endDay) {
         const key = `${current.getFullYear()}-${current.getMonth()}-${current.getDate()}`;
         if (!map.has(key)) map.set(key, new Set());
