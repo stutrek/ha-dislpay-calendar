@@ -1,8 +1,8 @@
 import { render } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { DEFAULT_COLORS, type CalendarConfig, type CalendarConfigItem, type FontSize } from './CalendarContext';
-import type { HomeAssistant } from '../HAContext';
-import { useCallbackStable } from '../useCallbackStable';
+import type { HomeAssistant } from '../shared/HAContext';
+import { useCallbackStable } from '../shared/useCallbackStable';
 
 // Type declarations for HA elements are in ../ha-elements.d.ts
 

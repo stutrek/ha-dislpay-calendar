@@ -15,7 +15,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && npm run build:calendar && npm run build:weather",
+    "build:calendar": "CARD=calendar vite build",
+    "build:weather": "CARD=weather vite build",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

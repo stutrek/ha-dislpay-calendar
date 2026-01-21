@@ -1,4 +1,4 @@
-import { css } from './styleRegistry';
+import { css } from '../shared/styleRegistry';
 
 export const eventListStyles = css`
 .event-list {

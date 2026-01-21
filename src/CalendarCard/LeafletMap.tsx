@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'preact/hooks';
 import L from 'leaflet';
 import leafletCss from 'leaflet/dist/leaflet.css?inline';
-import { registerRawStyles, css } from './styleRegistry';
+import { registerRawStyles, css } from '../shared/styleRegistry';
 
 // Import marker icons to fix bundling issue
 import markerIcon from 'leaflet/dist/images/marker-icon.png';

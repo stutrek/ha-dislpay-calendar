@@ -1,9 +1,9 @@
 import { render } from 'preact';
-import { HAProvider, type HomeAssistant } from '../HAContext';
+import { HAProvider, type HomeAssistant } from '../shared/HAContext';
 import { CalendarProvider, useCalendar, type CalendarConfig } from './CalendarContext';
 import { MonthGrid } from './MonthGrid';
 import { EventList } from './EventList';
-import { getAllStyles } from './styleRegistry';
+import { getAllStyles } from '../shared/styleRegistry';
 import './DisplayCalendarCard.styles'; // registers card styles
 // Import editor to ensure it's registered
 import './DisplayCalendarEditor';

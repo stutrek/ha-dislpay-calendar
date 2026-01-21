@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
-import { useCallbackStable } from '../useCallbackStable';
+import { useCallbackStable } from '../shared/useCallbackStable';
 
 // ============================================================================
 // Types

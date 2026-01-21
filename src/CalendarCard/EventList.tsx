@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { useCallbackStable } from '../useCallbackStable';
+import { useCallbackStable } from '../shared/useCallbackStable';
 import { useCalendar, formatTimeRange, type EnrichedEvent } from './CalendarContext';
 import { EventModal } from './EventModal';
 import './EventList.styles'; // registers styles

@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'preact/hooks';
-import { useCallbackStable } from '../useCallbackStable';
-import { useHass } from '../HAContext';
+import { useCallbackStable } from '../shared/useCallbackStable';
+import { useHass } from '../shared/HAContext';
 import { useGeocode } from './useGeocode';
 import { useCalendar, formatTimeRange, type EnrichedEvent } from './CalendarContext';
 import { LeafletMap } from './LeafletMap';

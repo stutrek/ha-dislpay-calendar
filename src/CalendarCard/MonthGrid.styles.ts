@@ -1,4 +1,4 @@
-import { css } from './styleRegistry';
+import { css } from '../shared/styleRegistry';
 
 export const monthGridStyles = css`
 .month-grid {
@@ -12,7 +12,7 @@ export const monthGridStyles = css`
   align-items: center;
   justify-content: space-between;
   padding: 0;
-  margin-bottom: 0.5em;
+  margin-bottom: 0em;
 }
 
 .month-title {

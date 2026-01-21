@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/preact';
-import { CalendarProvider, type CalendarConfig, type CalendarEventWithSource, type WeatherForecast, type FontSize } from '../components/CalendarContext';
-import { CalendarCardInner } from '../components/DisplayCalendarCard';
-import { getAllStyles } from '../components/styleRegistry';
+import { CalendarProvider, type CalendarConfig, type CalendarEventWithSource, type WeatherForecast, type FontSize } from '../CalendarCard/CalendarContext';
+import { CalendarCardInner } from '../CalendarCard';
+import { getAllStyles } from '../shared/styleRegistry';
 // Import component styles to register them
-import '../components/DisplayCalendarCard.styles';
+import '../CalendarCard/DisplayCalendarCard.styles';
 
 // Import sample data
 import rawCalendarEvents from './calendar.json';

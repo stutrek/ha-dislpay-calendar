@@ -47,6 +47,7 @@ export interface WeatherEntity extends HassEntityBase {
     humidity?: number;
     pressure?: number;
     wind_speed?: number;
+    wind_gust_speed?: number;
     wind_bearing?: number;
     visibility?: number;
     supported_features?: number;  // Bitmask for supported forecast types

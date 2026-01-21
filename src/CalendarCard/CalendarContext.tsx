@@ -1,13 +1,13 @@
 import { createContext } from 'preact';
 import { useContext, useState, useMemo, useEffect } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
-import { useCallbackStable } from '../useCallbackStable';
+import { useCallbackStable } from '../shared/useCallbackStable';
 import {
   useMultiCalendarEvents,
   useWeatherForecast,
   type CalendarEventWithSource,
   type WeatherForecast,
-} from '../HAContext';
+} from '../shared/HAContext';
 
 // ============================================================================
 // Default Color Palette
@@ -528,4 +528,4 @@ export function useCalendar(): CalendarContextValue {
 }
 
 // Re-export types from HAContext for convenience
-export type { CalendarEventWithSource, WeatherForecast } from '../HAContext';
+export type { CalendarEventWithSource, WeatherForecast } from '../shared/HAContext';
