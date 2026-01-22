@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'preact/hooks';
 import { useCallbackStable } from '../shared/useCallbackStable';
 import { useHass } from '../shared/HAContext';
 import { useGeocode } from './useGeocode';
-import { useCalendar, formatTimeRange, type EnrichedEvent } from './CalendarContext';
+import { formatTimeRange, type EnrichedEvent } from './CalendarContext';
 import { LeafletMap } from './LeafletMap';
 import './EventModal.styles'; // registers styles
 
@@ -47,7 +47,6 @@ function formatEventDate(event: EnrichedEvent): string {
 export function EventModal({ event, onClose }: EventModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { getHass } = useHass();
-  const { config } = useCalendar();
   
   // Get home location and theme from HA config
   const hass = getHass();
@@ -57,12 +56,11 @@ export function EventModal({ event, onClose }: EventModalProps) {
   
   // Geocode the event location
   const { lat, lng, loading, notFound, refetch } = useGeocode(event.location);
-  
   // Get calendar names for this event
   const calendarNames = event.calendarIds.map(id => {
-    const cal = config.calendars.find(c => c.entityId === id);
-    // Use configured name, or extract from entity ID (e.g., "calendar.family" -> "Family")
-    return cal?.name ?? id.replace('calendar.', '').replace(/_/g, ' ');
+    // Get friendly_name from HA entity, fall back to extracting from entity ID
+    const friendlyName = hass?.states[id]?.attributes?.friendly_name;
+    return friendlyName ?? id.replace('calendar.', '').replace(/_/g, ' ');
   });
   
   // Open dialog on mount
