@@ -7,6 +7,7 @@ import {
   useHass,
   type WeatherEntity,
   type WeatherForecast,
+  type SunEntity,
 } from '../shared/HAContext';
 
 // ============================================================================
@@ -21,6 +22,13 @@ export interface WeatherConfig {
   size?: FontSize;
 }
 
+export interface SunTimes {
+  sunrise: Date | undefined;
+  sunset: Date | undefined;
+  dawn: Date | undefined;
+  dusk: Date | undefined;
+}
+
 export interface WeatherContextValue {
   config: WeatherConfig;
   entity: WeatherEntity | undefined;
@@ -28,6 +36,8 @@ export interface WeatherContextValue {
   dailyForecast: WeatherForecast[] | undefined;
   loading: boolean;
   windSpeedUnit: string;
+  sunTimes: SunTimes;
+  latitude: number | undefined;
 }
 
 // ============================================================================
@@ -46,6 +56,9 @@ interface WeatherProviderProps {
   entity?: WeatherEntity;
   hourlyForecast?: WeatherForecast[];
   dailyForecast?: WeatherForecast[];
+  // For Storybook/testing: pass sun times and latitude directly
+  sunTimes?: SunTimes;
+  latitude?: number;
   children: ComponentChildren;
 }
 
@@ -54,6 +67,8 @@ export function WeatherProvider({
   entity: propEntity,
   hourlyForecast: propHourlyForecast,
   dailyForecast: propDailyForecast,
+  sunTimes: propSunTimes,
+  latitude: propLatitude,
   children,
 }: WeatherProviderProps) {
   // Use HAContext hooks to fetch data (only runs if inside HAProvider)
@@ -62,6 +77,8 @@ export function WeatherProvider({
   let hookDailyForecast: WeatherForecast[] | undefined;
   let hookLoading = false;
   let windSpeedUnit = 'mph';
+  let hookSunTimes: SunTimes = { sunrise: undefined, sunset: undefined, dawn: undefined, dusk: undefined };
+  let hookLatitude: number | undefined;
   
   // Determine which entity to use for forecasts
   const forecastEntity = config.forecast_entity ?? config.entity;
@@ -70,9 +87,22 @@ export function WeatherProvider({
     const { getHass } = useHass();
     const hass = getHass();
     windSpeedUnit = hass?.config?.unit_system?.wind_speed ?? 'mph';
+    hookLatitude = hass?.config?.latitude;
     
     // Current conditions from primary entity
     hookEntity = useEntity(config.entity);
+    
+    // Sun entity for sunrise/sunset times
+    const sunEntity = useEntity('sun.sun') as SunEntity | undefined;
+    if (sunEntity?.attributes) {
+      const attrs = sunEntity.attributes;
+      hookSunTimes = {
+        sunrise: attrs.next_rising ? new Date(attrs.next_rising) : undefined,
+        sunset: attrs.next_setting ? new Date(attrs.next_setting) : undefined,
+        dawn: attrs.next_dawn ? new Date(attrs.next_dawn) : undefined,
+        dusk: attrs.next_dusk ? new Date(attrs.next_dusk) : undefined,
+      };
+    }
     
     // Forecasts from forecast_entity (or primary entity if not specified)
     const hourlyResult = useWeatherForecast(forecastEntity, 'hourly');
@@ -92,6 +122,8 @@ export function WeatherProvider({
   const hourlyForecast = propHourlyForecast ?? hookHourlyForecast;
   const dailyForecast = propDailyForecast ?? hookDailyForecast;
   const loading = propEntity ? false : hookLoading;
+  const sunTimes = propSunTimes ?? hookSunTimes;
+  const latitude = propLatitude ?? hookLatitude;
   
   const value = useMemo<WeatherContextValue>(() => ({
     config,
@@ -100,7 +132,9 @@ export function WeatherProvider({
     dailyForecast,
     loading,
     windSpeedUnit,
-  }), [config, entity, hourlyForecast, dailyForecast, loading, windSpeedUnit]);
+    sunTimes,
+    latitude,
+  }), [config, entity, hourlyForecast, dailyForecast, loading, windSpeedUnit, sunTimes, latitude]);
   
   return (
     <WeatherContext.Provider value={value}>
@@ -122,4 +156,4 @@ export function useWeather(): WeatherContextValue {
 }
 
 // Re-export types from HAContext for convenience
-export type { WeatherEntity, WeatherForecast, ForecastType } from '../shared/HAContext';
+export type { WeatherEntity, WeatherForecast, ForecastType, SunEntity } from '../shared/HAContext';

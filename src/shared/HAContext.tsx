@@ -55,6 +55,25 @@ export interface WeatherEntity extends HassEntityBase {
 }
 
 /**
+ * Sun entity - provides sunrise/sunset times.
+ */
+export interface SunEntity extends HassEntityBase {
+  entity_id: 'sun.sun';
+  state: 'above_horizon' | 'below_horizon';
+  attributes: HassEntityAttributeBase & {
+    next_dawn?: string;      // ISO datetime
+    next_dusk?: string;      // ISO datetime
+    next_midnight?: string;  // ISO datetime
+    next_noon?: string;      // ISO datetime
+    next_rising?: string;    // ISO datetime (sunrise)
+    next_setting?: string;   // ISO datetime (sunset)
+    elevation?: number;      // Sun elevation in degrees
+    azimuth?: number;        // Sun azimuth in degrees
+    rising?: boolean;        // True if sun is rising
+  };
+}
+
+/**
  * Calendar event returned by calendar/get_events websocket command
  */
 export interface CalendarEvent {
@@ -88,6 +107,8 @@ export interface WeatherForecast {
   humidity?: number;
   wind_speed?: number;
   wind_bearing?: number;
+  cloud_coverage?: number;             // 0-100 cloud coverage percentage
+  uv_index?: number;                   // UV index
   is_daytime?: boolean;                // For twice_daily forecasts
 }
 
@@ -100,6 +121,7 @@ export type ForecastType = 'daily' | 'hourly' | 'twice_daily';
 interface DomainEntityMap {
   calendar: CalendarEntity;
   weather: WeatherEntity;
+  sun: SunEntity;
 }
 
 type KnownDomain = keyof DomainEntityMap;

@@ -210,4 +210,29 @@ export const weatherCardStyles = css`
   font-size: 0.625em;
   color: var(--info-color, #3b82f6);
 }
+
+/* Hourly Chart */
+.hourly-chart {
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.25em 0;
+  font-size: inherit;
+}
+
+/* Daily Chart */
+.daily-chart {
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.25em 0;
+  font-size: inherit;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .hourly-chart *,
+  .daily-chart * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 `;
