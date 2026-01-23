@@ -320,26 +320,28 @@ function GroundLayer({ forecast, x, y, width, height, latitude }: GroundLayerPro
       </g>
     );
   }
+
+  return null;
   
-  // Render emoji row
-  const numEmoji = Math.min(emojiSet.length, 8);
-  const spacing = width / (numEmoji + 1);
+  // // Render emoji row
+  // const numEmoji = Math.min(emojiSet.length, 8);
+  // const spacing = width / (numEmoji + 1);
   
-  return (
-    <g transform={`translate(${x}, ${y})`}>
-      {emojiSet.slice(0, numEmoji).map((emoji, i) => (
-        <text
-          key={i}
-          x={spacing * (i + 1)}
-          y={height * 0.8}
-          textAnchor="middle"
-          fontSize="0.6em"
-        >
-          {emoji}
-        </text>
-      ))}
-    </g>
-  );
+  // return (
+  //   <g transform={`translate(${x}, ${y})`}>
+  //     {emojiSet.slice(0, numEmoji).map((emoji, i) => (
+  //       <text
+  //         key={i}
+  //         x={spacing * (i + 1)}
+  //         y={height * 0.8}
+  //         textAnchor="middle"
+  //         fontSize="0.6em"
+  //       >
+  //         {emoji}
+  //       </text>
+  //     ))}
+  //   </g>
+  // );
 }
 
 interface PuddleGroupProps {
@@ -669,14 +671,14 @@ export function HourlyChart({ forecast, sunTimes, latitude, maxItems = 12 }: Hou
       />
       
       {/* Ground layer emoji - in neutral bottom bar */}
-      {/* <GroundLayer
+      <GroundLayer
         forecast={items}
         x={padding.left}
         y={bottomBarY}
         width={contentWidth}
         height={bottomBarHeight * 0.5}
         latitude={latitude}
-      /> */}
+      />
       
       {/* Time labels - in neutral bottom bar */}
       <TimeLabels
