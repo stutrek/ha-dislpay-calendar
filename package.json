@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",
+    "d3-delaunay": "^6.0.4",
     "home-assistant-js-websocket": "^9.6.0",
     "leaflet": "^1.9.4",
     "preact": "^10.27.2"
@@ -36,6 +37,7 @@
     "@storybook/addon-docs": "^10.1.11",
     "@storybook/addon-vitest": "^10.1.11",
     "@storybook/preact-vite": "^10.1.11",
+    "@types/d3-delaunay": "^6.0.4",
     "@types/node": "^24.10.1",
     "@vitest/browser-playwright": "^4.0.17",
     "@vitest/coverage-v8": "^4.0.17",

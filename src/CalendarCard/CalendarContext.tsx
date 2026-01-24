@@ -152,7 +152,7 @@ function findClosestForecast(
   
   for (const forecast of forecasts) {
     const diff = Math.abs(datetime.getTime() - new Date(forecast.datetime).getTime());
-    if (diff < closestDiff) {
+    if (diff < closestDiff && diff < 1000 * 60 * 60) {
       closest = forecast;
       closestDiff = diff;
     }

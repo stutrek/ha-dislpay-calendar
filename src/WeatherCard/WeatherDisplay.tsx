@@ -88,7 +88,7 @@ function CurrentTime() {
 // ============================================================================
 
 export function WeatherDisplay() {
-  const { entity, hourlyForecast, dailyForecast, loading, windSpeedUnit, precipitationUnit, sunTimes, latitude } = useWeather();
+  const { entity, hourlyForecast, dailyForecast, loading, windSpeedUnit, precipitationUnit, sunTimes } = useWeather();
   
   if (loading && !entity) {
     return <div class="weather-loading">Loading weather...</div>;
@@ -162,8 +162,8 @@ export function WeatherDisplay() {
         <HourlyChart 
           forecast={hourlyForecast} 
           sunTimes={sunTimes}
-          latitude={latitude}
           maxItems={12} 
+          height={100}
         />
       )}
 
@@ -174,9 +174,8 @@ export function WeatherDisplay() {
         <DailyChart
           forecast={dailyForecast}
           sunTimes={sunTimes}
-          latitude={latitude}
-          maxItems={7}
           precipitationUnit={precipitationUnit}
+          height={100}
         />
       )}
     </div>
