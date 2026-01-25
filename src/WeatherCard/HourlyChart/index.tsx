@@ -6,7 +6,7 @@
 import type { JSX } from 'preact';
 import { useRef, useEffect } from 'preact/hooks';
 import type { WeatherForecast, SunTimes } from '../WeatherContext';
-import { drawHourlyBackground, drawTemperatureLine, createTemperaturePositioner, getWeatherIcon } from './canvasHelpers';
+import { drawHourlyBackground, drawTemperatureLine, createTemperaturePositioner, getWeatherIconForTime } from './canvasHelpers';
 import { drawPrecipitation } from './precipitation';
 
 // ============================================================================
@@ -143,7 +143,10 @@ export function HourlyChart({
             
             // Render consolidated icons with lines
             return groups.map((group, groupIndex) => {
-              const icon = getWeatherIcon(group.condition);
+              // Use the middle hour of the group to determine day/night
+              const middleIndex = Math.floor((group.startIndex + group.endIndex) / 2);
+              const middleHour = forecast[middleIndex];
+              const icon = getWeatherIconForTime(group.condition, middleHour.datetime, sunTimes);
               
               // Calculate positions
               const startX = (group.startIndex / (forecast.length - 1)) * 100;
@@ -242,6 +245,7 @@ export function HourlyChart({
               const { getTempY } = createTemperaturePositioner(forecast, height, pixelsPerDegree);
               
               return forecast.map((hour, index) => {
+                if (index === 0 || index === forecast.length - 1) return null;
                 const date = new Date(hour.datetime);
                 const hourNum = date.getHours();
                 

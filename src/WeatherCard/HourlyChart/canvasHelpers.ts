@@ -93,6 +93,32 @@ export function getWeatherIcon(condition: string | undefined): string {
   return WEATHER_ICONS[condition] ?? 'mdi:weather-cloudy';
 }
 
+/**
+ * Get MDI weather icon name for a condition at a specific time
+ * Automatically uses night variants when available
+ */
+export function getWeatherIconForTime(
+  condition: string | undefined,
+  datetime: string,
+  sunTimes: SunTimes
+): string {
+  if (!condition) return 'mdi:weather-cloudy';
+  
+  // Check if it's nighttime
+  const isNight = !isDaytime(datetime, sunTimes);
+  
+  // If nighttime, check for a -night variant in the map
+  if (isNight) {
+    const nightVariant = `${condition}-night`;
+    if (WEATHER_ICONS[nightVariant]) {
+      return WEATHER_ICONS[nightVariant];
+    }
+  }
+  
+  // Fall back to regular icon
+  return WEATHER_ICONS[condition] ?? 'mdi:weather-cloudy';
+}
+
 // ============================================================================
 // Temperature Position Calculator
 // ============================================================================
