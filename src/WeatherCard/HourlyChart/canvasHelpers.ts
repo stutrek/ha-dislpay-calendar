@@ -249,11 +249,80 @@ export function drawHourlyBackground(
   // Create horizontal linear gradient
   const gradient = ctx.createLinearGradient(0, 0, width, 0);
   
+  // Get timeframe boundaries
+  const firstTime = new Date(forecast[0].datetime).getTime();
+  const lastTime = new Date(forecast[forecast.length - 1].datetime).getTime();
+  const timeRange = lastTime - firstTime;
+  
+  // Helper to convert timestamp to gradient position (0-1)
+  const getGradientPosition = (timestamp: number): number => {
+    if (timeRange === 0) return 0;
+    return (timestamp - firstTime) / timeRange;
+  };
+  
+  // Collect all color stops
+  interface ColorStop {
+    position: number;
+    color: string;
+    isSunEvent?: boolean;
+    isAfterSun?: boolean;
+  }
+  
+  const colorStops: ColorStop[] = [];
+  
   // Add color stops for each hour
   forecast.forEach((hour, index) => {
-    const position = index / (forecast.length - 1); // 0 to 1
+    const position = index / (forecast.length - 1);
     const color = getHourColor(hour.datetime, hour.cloud_coverage, sunTimes);
-    gradient.addColorStop(position, color);
+    colorStops.push({ position, color });
+  });
+  
+  // Add sunrise transition if within range
+  if (sunTimes.sunrise) {
+    const sunriseTime = sunTimes.sunrise.getTime();
+    if (sunriseTime >= firstTime && sunriseTime <= lastTime) {
+      const sunrisePos = getGradientPosition(sunriseTime);
+      const offset = 0.001; // Small offset for sharp transition
+      
+      // Get average cloud coverage around sunrise for smooth cloud transition
+      const avgCloudCoverage = forecast.reduce((sum, h) => sum + (h.cloud_coverage ?? 50), 0) / forecast.length;
+      
+      // Just before sunrise: night color
+      const nightColor = interpolateColor(COLORS.nightClear, COLORS.nightCloudy, avgCloudCoverage / 100);
+      colorStops.push({ position: Math.max(0, sunrisePos - offset), color: nightColor, isSunEvent: true });
+      
+      // Just after sunrise: day color
+      const dayColor = interpolateColor(COLORS.dayClear, COLORS.dayCloudy, avgCloudCoverage / 100);
+      colorStops.push({ position: Math.min(1, sunrisePos + offset), color: dayColor, isSunEvent: true, isAfterSun: true });
+    }
+  }
+  
+  // Add sunset transition if within range
+  if (sunTimes.sunset) {
+    const sunsetTime = sunTimes.sunset.getTime();
+    if (sunsetTime >= firstTime && sunsetTime <= lastTime) {
+      const sunsetPos = getGradientPosition(sunsetTime);
+      const offset = 0.001; // Small offset for sharp transition
+      
+      // Get average cloud coverage around sunset for smooth cloud transition
+      const avgCloudCoverage = forecast.reduce((sum, h) => sum + (h.cloud_coverage ?? 50), 0) / forecast.length;
+      
+      // Just before sunset: day color
+      const dayColor = interpolateColor(COLORS.dayClear, COLORS.dayCloudy, avgCloudCoverage / 100);
+      colorStops.push({ position: Math.max(0, sunsetPos - offset), color: dayColor, isSunEvent: true });
+      
+      // Just after sunset: night color
+      const nightColor = interpolateColor(COLORS.nightClear, COLORS.nightCloudy, avgCloudCoverage / 100);
+      colorStops.push({ position: Math.min(1, sunsetPos + offset), color: nightColor, isSunEvent: true, isAfterSun: true });
+    }
+  }
+  
+  // Sort color stops by position
+  colorStops.sort((a, b) => a.position - b.position);
+  
+  // Add all color stops to gradient
+  colorStops.forEach(stop => {
+    gradient.addColorStop(stop.position, stop.color);
   });
   
   // Fill the entire canvas with the gradient

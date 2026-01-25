@@ -152,10 +152,16 @@ function findClosestForecast(
   
   for (const forecast of forecasts) {
     const diff = Math.abs(datetime.getTime() - new Date(forecast.datetime).getTime());
-    if (diff < closestDiff && diff < 1000 * 60 * 60) {
+    if (diff < closestDiff) {
       closest = forecast;
       closestDiff = diff;
     }
+  }
+  
+  // Only return forecast if it's within 2 hours of the requested time
+  const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+  if (closestDiff > TWO_HOURS_MS) {
+    return undefined;
   }
   
   return closest;
