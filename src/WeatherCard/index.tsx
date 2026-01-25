@@ -3,6 +3,7 @@ import { HAProvider, type HomeAssistant } from '../shared/HAContext';
 import { WeatherProvider, type WeatherConfig } from './WeatherContext';
 import { WeatherDisplay } from './WeatherDisplay';
 import { getAllStyles } from '../shared/styleRegistry';
+import { BaseHACard } from '../shared/BaseHACard';
 import './WeatherCard.styles'; // registers card styles
 import './DisplayWeatherEditor'; // registers editor element
 
@@ -21,9 +22,10 @@ interface CardConfig extends WeatherConfig {
 interface WeatherCardContentProps {
   config: WeatherConfig;
   hass: HomeAssistant;
+  subscribeToEntity: (entityId: string, callback: (entity: any) => void) => () => void;
 }
 
-function WeatherCardContent({ config, hass }: WeatherCardContentProps) {
+function WeatherCardContent({ config, hass, subscribeToEntity }: WeatherCardContentProps) {
   console.log('[WeatherCardContent] RENDER', { config, statesCount: Object.keys(hass.states).length });
   const sizeClass = `size-${config.size ?? 'medium'}`;
   
@@ -31,7 +33,7 @@ function WeatherCardContent({ config, hass }: WeatherCardContentProps) {
     <>
       <style>{getAllStyles()}</style>
       <div class={`weather-card ${sizeClass}`}>
-        <HAProvider hass={hass}>
+        <HAProvider hass={hass} subscribeToEntity={subscribeToEntity}>
           <WeatherProvider config={config}>
             <WeatherDisplay />
           </WeatherProvider>
@@ -45,30 +47,38 @@ function WeatherCardContent({ config, hass }: WeatherCardContentProps) {
 // Web Component
 // ============================================================================
 
-class DisplayWeatherCard extends HTMLElement {
-  private _hass?: HomeAssistant;
-  private _config?: CardConfig;
-  private _shadowRoot: ShadowRoot;
-
-  constructor() {
-    super();
-    this._shadowRoot = this.attachShadow({ mode: 'open' });
+class DisplayWeatherCard extends BaseHACard<CardConfig> {
+  protected getCardName(): string {
+    return 'DisplayWeatherCard';
   }
 
-  set hass(hass: HomeAssistant) {
-    this._hass = hass;
-    this._render();
+  protected _getEntityIds(): string[] {
+    if (!this._config) return [];
+    
+    const entityIds: string[] = [this._config.entity];
+    
+    if (this._config.forecast_entity && this._config.forecast_entity !== this._config.entity) {
+      entityIds.push(this._config.forecast_entity);
+    }
+    
+    entityIds.push('sun.sun');
+
+    return entityIds;
   }
 
   setConfig(config: CardConfig) {
     if (!config.entity) {
       throw new Error('Please define an entity (weather entity for current conditions)');
     }
+    
     this._config = config;
-    this._render();
+    
+    if (this._hass) {
+      this._subscribe();
+    }
   }
 
-  private _render() {
+  protected _render() {
     if (!this._config) {
       render(<div>No config</div>, this._shadowRoot);
       return;
@@ -80,7 +90,7 @@ class DisplayWeatherCard extends HTMLElement {
     }
 
     render(
-      <WeatherCardContent config={this._config} hass={this._hass} />,
+      <WeatherCardContent config={this._config} hass={this._hass} subscribeToEntity={this._subscribeToEntity} />,
       this._shadowRoot
     );
   }

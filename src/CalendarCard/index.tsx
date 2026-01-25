@@ -4,6 +4,7 @@ import { CalendarProvider, useCalendar, type CalendarConfig } from './CalendarCo
 import { MonthGrid } from './MonthGrid';
 import { EventList } from './EventList';
 import { getAllStyles } from '../shared/styleRegistry';
+import { BaseHACard } from '../shared/BaseHACard';
 import './DisplayCalendarCard.styles'; // registers card styles
 // Import editor to ensure it's registered
 import './DisplayCalendarEditor';
@@ -23,6 +24,7 @@ interface CardConfig extends CalendarConfig {
 interface CalendarCardContentProps {
   config: CalendarConfig;
   hass: HomeAssistant;
+  subscribeToEntity: (entityId: string, callback: (entity: any) => void) => () => void;
 }
 
 export function CalendarCardInner() {
@@ -46,14 +48,14 @@ export function CalendarCardInner() {
   );
 }
 
-function CalendarCardContent({ config, hass }: CalendarCardContentProps) {
+function CalendarCardContent({ config, hass, subscribeToEntity }: CalendarCardContentProps) {
   console.log('[CalendarCardContent] RENDER', { config, statesCount: Object.keys(hass.states).length });
   const sizeClass = `size-${config.fontSize || 'small'}`;
   return (
     <>
       <style>{getAllStyles()}</style>
       <div class={`calendar-card ${sizeClass}`}>
-        <HAProvider hass={hass}>
+        <HAProvider hass={hass} subscribeToEntity={subscribeToEntity}>
           <CalendarProvider config={config}>
             <CalendarCardInner />
           </CalendarProvider>
@@ -67,19 +69,23 @@ function CalendarCardContent({ config, hass }: CalendarCardContentProps) {
 // Web Component
 // ============================================================================
 
-class DisplayCalendarCard extends HTMLElement {
-  private _hass?: HomeAssistant;
-  private _config?: CardConfig;
-  private _shadowRoot: ShadowRoot;
-
-  constructor() {
-    super();
-    this._shadowRoot = this.attachShadow({ mode: 'open' });
+class DisplayCalendarCard extends BaseHACard<CardConfig> {
+  protected getCardName(): string {
+    return 'DisplayCalendarCard';
   }
 
-  set hass(hass: HomeAssistant) {
-    this._hass = hass;
-    this._render();
+  protected _getEntityIds(): string[] {
+    if (!this._config) return [];
+    
+    const entityIds: string[] = [
+      ...this._config.calendars.map(c => c.entityId),
+    ];
+    
+    if (this._config.weatherEntity) {
+      entityIds.push(this._config.weatherEntity);
+    }
+
+    return entityIds;
   }
 
   setConfig(config: CardConfig) {
@@ -88,10 +94,13 @@ class DisplayCalendarCard extends HTMLElement {
       ...config,
       calendars: config.calendars ?? [],
     };
-    this._render();
+    
+    if (this._hass) {
+      this._subscribe();
+    }
   }
 
-  private _render() {
+  protected _render() {
     if (!this._config) {
       render(<div>No config</div>, this._shadowRoot);
       return;
@@ -118,7 +127,7 @@ class DisplayCalendarCard extends HTMLElement {
     }
 
     render(
-      <CalendarCardContent config={this._config} hass={this._hass} />,
+      <CalendarCardContent config={this._config} hass={this._hass} subscribeToEntity={this._subscribeToEntity} />,
       this._shadowRoot
     );
   }

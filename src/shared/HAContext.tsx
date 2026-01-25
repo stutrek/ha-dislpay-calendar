@@ -155,12 +155,10 @@ export interface HomeAssistant {
   };
 }
 
-type EntitySubscriber = () => void;
-
 interface HAStore {
-  subscribe: (entityId: string, callback: EntitySubscriber) => () => void;
-  getEntity: <T extends string>(entityId: T) => EntityForId<T> | undefined;
+  hass: HomeAssistant | undefined;
   getHass: () => HomeAssistant | undefined;
+  subscribeToEntity: (entityId: string, callback: (entity: any) => void) => () => void;
 }
 
 // ============================================================================
@@ -175,114 +173,28 @@ const HAContext = createContext<HAStore | null>(null);
 
 interface HAProviderProps {
   hass: HomeAssistant | undefined;
+  subscribeToEntity: (entityId: string, callback: (entity: any) => void) => () => void;
   children: ComponentChildren;
 }
 
-export function HAProvider({ hass, children }: HAProviderProps) {
+export function HAProvider({ hass, subscribeToEntity, children }: HAProviderProps) {
   console.log('[HAProvider] RENDER', { hasHass: !!hass, statesCount: Object.keys(hass?.states || {}).length });
   
-  // Store hass in a ref to avoid re-renders when it changes
-  const hassRef = useRef<HomeAssistant | undefined>(hass);
+  // Store hass in ref for stable access
+  const hassRef = useRef(hass);
+  hassRef.current = hass;
   
-  // Track previous states for diffing
-  const prevStatesRef = useRef<HassEntities | undefined>(undefined);
+  const getHass = useCallbackStable(() => hassRef.current);
   
-  // Map of entity_id -> Set of subscriber callbacks
-  const subscribersRef = useRef<Map<string, Set<EntitySubscriber>>>(new Map());
-
-  // Stable subscribe function
-  const subscribe = useCallbackStable((entityId: string, callback: EntitySubscriber) => {
-    const subscribers = subscribersRef.current;
-    
-    if (!subscribers.has(entityId)) {
-      subscribers.set(entityId, new Set());
-    }
-    subscribers.get(entityId)!.add(callback);
-
-    // Return unsubscribe function
-    return () => {
-      const entitySubscribers = subscribers.get(entityId);
-      if (entitySubscribers) {
-        entitySubscribers.delete(callback);
-        if (entitySubscribers.size === 0) {
-          subscribers.delete(entityId);
-        }
-      }
-    };
-  });
-
-  // Stable getEntity function with type inference
-  const getEntity = useCallbackStable(<T extends string>(entityId: T): EntityForId<T> | undefined => {
-    return hassRef.current?.states[entityId] as EntityForId<T> | undefined;
-  });
-
-  // Stable getHass function
-  const getHass = useCallbackStable((): HomeAssistant | undefined => {
-    return hassRef.current;
-  });
-
-  // Update ref and notify subscribers when hass changes
-  useEffect(() => {
-    console.log('[HAProvider] useEffect - hass changed');
-    hassRef.current = hass;
-
-    if (!hass) {
-      prevStatesRef.current = undefined;
-      return;
-    }
-
-    const prevStates = prevStatesRef.current;
-    const newStates = hass.states;
-
-    // Find which entities changed
-    const changedEntityIds = new Set<string>();
-
-    if (prevStates) {
-      // Check for changed or removed entities
-      for (const entityId of Object.keys(prevStates)) {
-        if (prevStates[entityId] !== newStates[entityId]) {
-          changedEntityIds.add(entityId);
-        }
-      }
-      // Check for new entities
-      for (const entityId of Object.keys(newStates)) {
-        if (!(entityId in prevStates)) {
-          changedEntityIds.add(entityId);
-        }
-      }
-    } else {
-      // First load - all entities are "changed"
-      for (const entityId of Object.keys(newStates)) {
-        changedEntityIds.add(entityId);
-      }
-    }
-
-    console.log('[HAProvider] Entity changes detected:', Array.from(changedEntityIds).slice(0, 10), changedEntityIds.size > 10 ? `... and ${changedEntityIds.size - 10} more` : '');
-
-    // Notify subscribers for changed entities
-    const subscribers = subscribersRef.current;
-    for (const entityId of changedEntityIds) {
-      const entitySubscribers = subscribers.get(entityId);
-      if (entitySubscribers) {
-        console.log(`[HAProvider] Notifying ${entitySubscribers.size} subscribers for ${entityId}`);
-        for (const callback of entitySubscribers) {
-          callback();
-        }
-      }
-    }
-
-    prevStatesRef.current = newStates;
-  }, [hass]);
-
-  // Create stable store object
+  // Create stable store with subscription function from web component
   const store = useMemo<HAStore>(() => {
     console.log('[HAProvider] useMemo - creating store');
     return {
-      subscribe,
-      getEntity,
+      hass: hassRef.current,
       getHass,
+      subscribeToEntity, // Pass through from web component
     };
-  }, [subscribe, getEntity, getHass]);
+  }, [getHass, subscribeToEntity]);
 
   return (
     <HAContext.Provider value={store}>
@@ -317,16 +229,27 @@ function useHAStore(): HAStore {
  */
 export function useEntity<T extends string>(entityId: T): EntityForId<T> | undefined {
   const store = useHAStore();
-  const [entity, setEntity] = useState(() => store.getEntity(entityId));
+  
+  // Initial state from current hass
+  const [entity, setEntity] = useState<EntityForId<T> | undefined>(() => 
+    store.hass?.states[entityId] as EntityForId<T> | undefined
+  );
 
   useEffect(() => {
-    // Update immediately in case entity changed while we weren't subscribed
-    setEntity(store.getEntity(entityId));
-
-    return store.subscribe(entityId, () => {
-      setEntity(store.getEntity(entityId));
+    console.log(`[useEntity] Subscribing to ${entityId}`);
+    
+    // Subscribe to entity changes via web component
+    const unsubscribe = store.subscribeToEntity(entityId, (newEntity) => {
+      console.log(`[useEntity] ${entityId} changed, updating state`);
+      setEntity(newEntity as EntityForId<T>);
     });
-  }, [entityId, store]);
+
+    // Cleanup on unmount or entityId change
+    return () => {
+      console.log(`[useEntity] Unsubscribing from ${entityId}`);
+      unsubscribe();
+    };
+  }, [entityId, store.subscribeToEntity]);
 
   return entity;
 }
@@ -579,7 +502,7 @@ export function useMultiCalendarEvents(
   // Subscribe to entity changes and refetch (debounced)
   useEffect(() => {
     const unsubscribes = entityIds.map(entityId => 
-      store.subscribe(entityId, debouncedRefetch)
+      store.subscribeToEntity(entityId, debouncedRefetch)
     );
     return () => {
       unsubscribes.forEach(unsub => unsub());
@@ -587,7 +510,7 @@ export function useMultiCalendarEvents(
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [entityIdsKey, store, debouncedRefetch]);
+  }, [entityIdsKey, store.subscribeToEntity, debouncedRefetch]);
 
   // Synchronously check cache for current date range (avoids flash on navigation)
   // This runs during render, so cached data is available immediately
