@@ -9,6 +9,7 @@ import type { WeatherForecast, SunTimes } from '../WeatherContext';
 import { getWeatherIcon } from '../HourlyChart/canvasHelpers';
 import { drawTemperatureBars, createBarPositioner } from './canvasHelpers';
 import { drawPrecipitation } from './precipitation';
+import './styles'; // registers styles via css`` tagged template
 
 // ============================================================================
 // Types
@@ -96,10 +97,7 @@ export function DailyChart({
 
   if (!forecast || forecast.length === 0) {
     return (
-      <div style={{
-        padding: '1rem',
-        textAlign: 'center',
-      }}>
+      <div className="daily-no-data">
         No forecast data available
       </div>
     );
@@ -115,24 +113,18 @@ export function DailyChart({
   return (
     <div
       ref={containerRef}
-
+      className="daily-chart-container"
     >
       {/* Canvas with overlays */}
-      <div style={{ position: 'relative', width: '100%' }}>
+      <div>
         {/* Day labels */}
-        <div style={{
-          display: 'flex',
-          width: '100%',
-        }}>
+        <div className="daily-labels-row">
           {visibleForecast.map((day, index) => (
             <div
               key={index}
+              className="daily-day-label"
               style={{
                 flex: `0 0 ${columnWidth}%`,
-                textAlign: 'center',
-                fontSize: '0.75em',
-                fontWeight: '600',
-				lineHeight: '1.2',
               }}
             >
               {formatDay(day.datetime)}
@@ -141,30 +133,20 @@ export function DailyChart({
         </div>
 
         {/* Weather icons */}
-        <div style={{
-          display: 'flex',
-          width: '100%',
-          justifyContent: 'space-around',
-        }}>
+        <div className="daily-icons-row">
           {visibleForecast.map((day, index) => {
             const icon = getWeatherIcon(day.condition);
             return (
               <div
                 key={index}
+                className="daily-icon-cell"
                 style={{
-				  height: '1.25em',
                   flex: `0 0 ${columnWidth}%`,
-                  display: 'flex',
-                  justifyContent: 'center',
-				  alignItems: 'center',
                 }}
               >
                 <ha-icon
                   icon={icon}
-                  style={{
-                    '--mdc-icon-size': '1em',
-                    color: 'var(--primary-text-color, #fff)',
-                  }}
+                  className="daily-weather-icon"
                 />
               </div>
             );
@@ -172,20 +154,15 @@ export function DailyChart({
         </div>
 
         {/* Precipitation amounts */}
-        <div style={{
-          display: 'flex',
-          width: '100%',
-        }}>
+        <div className="daily-precip-row">
           {visibleForecast.map((day, index) => {
             const precipText = formatPrecipitation(day.precipitation, precipitationUnit);
             return (
               <div
                 key={index}
+                className="daily-precip-cell"
                 style={{
                   flex: `0 0 ${columnWidth}%`,
-                  textAlign: 'center',
-                  fontSize: '0.625em',
-                  minHeight: '0.625em',
                 }}
               >
                 {precipText}
@@ -195,26 +172,17 @@ export function DailyChart({
         </div>
 
         {/* Canvas with temperature bars and precipitation */}
-        <div style={{ position: 'relative', width: '100%' }}>
+        <div className="daily-canvas-container">
           <canvas
             ref={canvasRef}
+            className="daily-canvas"
             style={{
-              width: '100%',
               height: `${height}px`,
-              borderRadius: '8px',
-              display: 'block',
             }}
           />
 
           {/* Temperature labels overlay */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: 'none',
-          }}>
+          <div className="daily-temp-overlay">
             {visibleForecast.map((day, index) => {
               const highTemp = day.temperature ?? 0;
               const lowTemp = day.templow ?? 0;
@@ -228,15 +196,10 @@ export function DailyChart({
                 <div key={index}>
                   {/* High temp - sits atop the bar */}
                   <div
+                    className="daily-temp-high"
                     style={{
-                      position: 'absolute',
                       left: `${xPercent}%`,
                       top: `${barTop}px`,
-                      transform: 'translate(-50%, -100%)',
-                      fontSize: '0.75em',
-                      fontWeight: '600',
-                      textShadow: '0 0 0.2em var(--card-background-color, rgba(255,255,255,0.8)), 0 0 0.4em var(--card-background-color, rgba(255,255,255,0.6))',
-                      paddingBottom: '0.125em',
                     }}
                   >
                     {Math.round(highTemp)}°
@@ -244,15 +207,10 @@ export function DailyChart({
 
                   {/* Low temp - sits below the bar */}
                   <div
+                    className="daily-temp-low"
                     style={{
-                      position: 'absolute',
                       left: `${xPercent}%`,
                       top: `${barBottom}px`,
-                      transform: 'translateX(-50%)',
-                      fontSize: '0.75em',
-                      fontWeight: '600',
-                      textShadow: '0 0 0.2em var(--card-background-color, rgba(255,255,255,0.8)), 0 0 0.4em var(--card-background-color, rgba(255,255,255,0.6))',
-                      paddingTop: '0.125em',
                     }}
                   >
                     {Math.round(lowTemp)}°

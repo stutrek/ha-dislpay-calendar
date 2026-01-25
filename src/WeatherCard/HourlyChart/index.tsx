@@ -8,6 +8,7 @@ import { useRef, useEffect } from 'preact/hooks';
 import type { WeatherForecast, SunTimes } from '../WeatherContext';
 import { drawHourlyBackground, drawTemperatureLine, createTemperaturePositioner, getWeatherIconForTime } from './canvasHelpers';
 import { drawPrecipitation } from './precipitation';
+import './styles'; // registers styles via css`` tagged template
 
 // ============================================================================
 // Types
@@ -69,11 +70,7 @@ export function HourlyChart({
 
   if (!forecast || forecast.length === 0) {
     return (
-      <div style={{
-        padding: '1rem',
-        textAlign: 'center',
-        color: '#888',
-      }}>
+      <div className="hourly-no-data">
         No forecast data available
       </div>
     );
@@ -82,19 +79,12 @@ export function HourlyChart({
   return (
     <div 
       ref={containerRef}
+      className="hourly-chart-container"
     >
       {/* Canvas with absolutely positioned labels */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-      }}>
+      <div>
         {/* Weather icons row above canvas */}
-        <div style={{
-          position: 'relative',
-          width: '100%',
-          height: '1.25em',
-          marginBottom: '0.125em',
-        }}>
+        <div className="hourly-icons-row">
           {(() => {
             // Get container width, use a default if not available yet
             const container = containerRef.current;
@@ -164,14 +154,10 @@ export function HourlyChart({
                   {/* Horizontal line underneath the icons - only for multi-hour conditions */}
                   {showLine && (
                     <div
+                      className="hourly-condition-line"
                       style={{
-                        position: 'absolute',
                         left: `${startX}%`,
                         right: `${100 - endX}%`,
-                        bottom: 0,
-                        height: '0.0625em',
-                        backgroundColor: 'var(--primary-text-color, #fff)',
-                        opacity: 0.3,
                       }}
                     />
                   )}
@@ -179,39 +165,27 @@ export function HourlyChart({
                   {/* End tick mark - creates the gap between conditions */}
                   {showLine && (
                     <div
+                      className="hourly-condition-tick"
                       style={{
-                        position: 'absolute',
                         left: `${startX}%`,
-                        bottom: 0,
-                        width: '0.0625em',
-                        height: '0.375em',
-                        backgroundColor: 'var(--primary-text-color, #fff)',
-                        opacity: 0.3,
                       }}
                     />
                   )}
                   {showEndTick && (
                     <div
+                      className="hourly-condition-tick"
                       style={{
-                        position: 'absolute',
                         left: `${endX}%`,
-                        bottom: 0,
-                        width: '0.0625em',
-                        height: '0.375em',
-                        backgroundColor: 'var(--primary-text-color, #fff)',
-                        opacity: 0.3,
                       }}
                     />
                   )}
                   {/* Icon in the center */}
                   <ha-icon
                     icon={icon}
+                    className="hourly-condition-icon"
                     style={{
-                      position: 'absolute',
                       left: `${centerX}%`,
-                      transform: 'translateX(-50%)',
                       '--mdc-icon-size': `${iconSize}em`,
-                      color: 'var(--primary-text-color, #fff)',
                     }}
                   />
                 </div>
@@ -221,26 +195,22 @@ export function HourlyChart({
         </div>
         
         {/* Canvas for visualization */}
-        <div style={{ position: 'relative' }}>
+        <div className="hourly-canvas-wrapper">
           <canvas
             ref={canvasRef}
+            className="hourly-canvas"
             style={{
-              width: '100%',
               height: `${height}px`,
-              borderRadius: '8px',
-              display: 'block',
             }}
           />
           
           {/* Temperature labels overlay */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: `${height}px`,
-            pointerEvents: 'none',
-          }}>
+          <div 
+            className="hourly-temp-overlay"
+            style={{
+              height: `${height}px`,
+            }}
+          >
             {(() => {
               // Use shared temperature positioner
               const { getTempY } = createTemperaturePositioner(forecast, height, pixelsPerDegree);
@@ -262,15 +232,10 @@ export function HourlyChart({
                 return (
                   <div
                     key={index}
+                    className="hourly-temp-label"
                     style={{
-                      position: 'absolute',
                       left: `${xPercent}%`,
                       top: `${lineY}px`,
-                      transform: 'translate(-50%, -50%)',
-                      fontSize: '0.75em',
-                      fontWeight: '600',
-                      textShadow: '0 0 0.2em var(--card-background-color, rgba(255,255,255,0.8)), 0 0 0.4em var(--card-background-color, rgba(255,255,255,0.6))',
-                      whiteSpace: 'nowrap',
                     }}
                   >
                     {Math.round(temp)}°
@@ -282,12 +247,7 @@ export function HourlyChart({
         </div>
         
         {/* Hour timeline below canvas */}
-        <div style={{
-          position: 'relative',
-          width: '100%',
-          height: '1.5em',
-          marginTop: '0.0625em',
-        }}>
+        <div className="hourly-timeline">
           {forecast.map((hour, index) => {
             if (index === 0 || index === forecast.length - 1) return null;
             const date = new Date(hour.datetime);
@@ -300,13 +260,9 @@ export function HourlyChart({
               return (
                 <div
                   key={index}
+                  className="hourly-hour-label"
                   style={{
-                    position: 'absolute',
                     left: `${xPercent}%`,
-                    transform: 'translateX(-50%)',
-                    fontSize: '0.75em',
-                    fontWeight: '500',
-                    color: 'var(--primary-text-color, #fff)',
                   }}
                 >
                   {hour12}
@@ -316,14 +272,9 @@ export function HourlyChart({
               return (
                 <div
                   key={index}
+                  className="hourly-hour-tick"
                   style={{
-                    position: 'absolute',
                     left: `${xPercent}%`,
-                    top: '0.3125em',
-                    transform: 'translateX(-50%)',
-                    width: '0.0625em',
-                    height: '0.375em',
-                    backgroundColor: 'var(--primary-text-color, #fff)',
                   }}
                 />
               );

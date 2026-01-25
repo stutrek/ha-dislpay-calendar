@@ -72,7 +72,7 @@ function drawEmoji(
   ctx.font = `${size}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.globalAlpha = 0.85; // Slightly transparent
+  ctx.fillStyle = 'white';
   ctx.fillText(emoji, x, y);
   ctx.restore();
 }

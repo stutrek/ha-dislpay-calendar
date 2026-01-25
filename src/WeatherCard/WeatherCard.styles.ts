@@ -32,10 +32,9 @@ export const weatherCardStyles = css`
   color: var(--secondary-text-color, #888);
 }
 
-.weather-display {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
+.weather-display hr {
+  border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+  margin: 0.5em 0;
 }
 
 /* Header: temp + icon on left, time on right */
@@ -43,6 +42,8 @@ export const weatherCardStyles = css`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  line-height: 1;
+  margin-top: 0.25em;
 }
 
 .weather-main {
@@ -87,9 +88,6 @@ export const weatherCardStyles = css`
   align-items: flex-start;
   font-size: 0.75em;
   gap: 1em;
-  padding: 0.75em 0;
-  border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-  border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
 }
 
 /* Humidity / Dewpoint group */
@@ -112,14 +110,6 @@ export const weatherCardStyles = css`
 .detail-separator {
   color: var(--secondary-text-color, #aaa);
   margin: 0 0.125em;
-}
-
-.weather-divider {
-  border: 0;
-  height: 0;
-  border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-  margin: 0;
-  padding: 0;
 }
 
 /* Wind section */
