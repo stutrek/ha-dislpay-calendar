@@ -548,6 +548,7 @@ export function useWeatherForecast(
   entityId: `weather.${string}`,
   type: ForecastType
 ): UseWeatherForecastResult {
+  const store = useHAStore();
   const { getHass } = useHass();
   const [forecast, setForecast] = useState<WeatherForecast[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
@@ -555,6 +556,12 @@ export function useWeatherForecast(
   
   // Track current fetch to avoid race conditions
   const fetchIdRef = useRef(0);
+  
+  // Debounce timer for entity change triggers
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Timer for hourly refetch
+  const hourlyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchForecast = useCallbackStable(async () => {
     const hass = getHass();
@@ -594,10 +601,62 @@ export function useWeatherForecast(
     }
   });
 
+  // Debounced refetch for entity changes
+  const debouncedRefetch = useCallbackStable(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      console.log(`[useWeatherForecast] Entity ${entityId} changed, refetching ${type} forecast`);
+      fetchForecast();
+    }, 500); // 500ms debounce
+  });
+
+  // Schedule next hourly refetch at the top of the hour
+  const scheduleHourlyRefetch = useCallbackStable(() => {
+    if (hourlyTimerRef.current) {
+      clearTimeout(hourlyTimerRef.current);
+    }
+    
+    // Calculate milliseconds until the next hour
+    const now = new Date();
+    const nextHour = new Date(now);
+    nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+    const msUntilNextHour = nextHour.getTime() - now.getTime();
+    
+    console.log(`[useWeatherForecast] Scheduling next ${type} forecast refetch in ${Math.round(msUntilNextHour / 1000 / 60)} minutes`);
+    
+    hourlyTimerRef.current = setTimeout(() => {
+      console.log(`[useWeatherForecast] Hourly timer triggered, refetching ${type} forecast`);
+      fetchForecast();
+      // Schedule the next refetch after this one completes
+      scheduleHourlyRefetch();
+    }, msUntilNextHour);
+  });
+
   // Fetch when dependencies change
   useEffect(() => {
     fetchForecast();
-  }, [entityId, type, fetchForecast]);
+    // Schedule hourly refetch after initial fetch
+    scheduleHourlyRefetch();
+  }, [entityId, type, fetchForecast, scheduleHourlyRefetch]);
+
+  // Subscribe to entity changes and refetch (debounced)
+  useEffect(() => {
+    console.log(`[useWeatherForecast] Subscribing to ${entityId} for ${type} forecast updates`);
+    const unsubscribe = store.subscribeToEntity(entityId, debouncedRefetch);
+    
+    return () => {
+      console.log(`[useWeatherForecast] Unsubscribing from ${entityId}`);
+      unsubscribe();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (hourlyTimerRef.current) {
+        clearTimeout(hourlyTimerRef.current);
+      }
+    };
+  }, [entityId, store.subscribeToEntity, debouncedRefetch]);
 
   return { forecast, loading, error, refetch: fetchForecast };
 }
