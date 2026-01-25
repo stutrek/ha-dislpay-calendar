@@ -53,8 +53,7 @@ function getParticleCount(
   // Different multipliers for rain vs snow
   // Snow is less dense because it takes more accumulation for same visual impact
   if (isSnow) {
-    // Snow: 0.1" = 2-3, 3" = 15-25, 8" = 40-60
-    const snowMultiplier = 5;
+    const snowMultiplier = 30;
     return Math.max(1, Math.round(precipitation * snowMultiplier * areaFactor));
   } else {
     // Rain: 0.1" = 3-5, 3" = 30-50

@@ -87,25 +87,12 @@ export function HourlyChart({
         position: 'relative',
         width: '100%',
       }}>
-        {/* Canvas for visualization */}
-        <canvas
-          ref={canvasRef}
-          style={{
-            width: '100%',
-            height: `${height}px`,
-            borderRadius: '8px',
-            display: 'block',
-          }}
-        />
-        
-        {/* Weather icons overlay */}
+        {/* Weather icons row above canvas */}
         <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
+          position: 'relative',
+          width: '100%',
           height: '1.25em',
-          pointerEvents: 'none',
+          marginBottom: '0.125em',
         }}>
           {(() => {
             // Get container width, use a default if not available yet
@@ -163,21 +150,55 @@ export function HourlyChart({
               const endX = (group.endIndex / (forecast.length - 1)) * 100;
               const centerX = (startX + endX) / 2;
               
+              // Only show line if group has multiple hours
+              const showLine = group.startIndex !== group.endIndex;
+              // Only show end tick if not the last group (and has multiple hours)
+              const showEndTick = groupIndex < groups.length - 1 && showLine;
+              
               return (
                 <div key={groupIndex}>
-                  {/* Horizontal line spanning the group */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: `${startX}%`,
-                      right: `${100 - endX}%`,
-                      top: '50%',
-                      height: '0.0625em',
-                      backgroundColor: 'var(--primary-text-color, #fff)',
-                      opacity: 0.3,
-                    }}
-                  />
+                  {/* Horizontal line underneath the icons - only for multi-hour conditions */}
+                  {showLine && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `${startX}%`,
+                        right: `${100 - endX}%`,
+                        bottom: 0,
+                        height: '0.0625em',
+                        backgroundColor: 'var(--primary-text-color, #fff)',
+                        opacity: 0.3,
+                      }}
+                    />
+                  )}
                   
+                  {/* End tick mark - creates the gap between conditions */}
+                  {showLine && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `${startX}%`,
+                        bottom: 0,
+                        width: '0.0625em',
+                        height: '0.375em',
+                        backgroundColor: 'var(--primary-text-color, #fff)',
+                        opacity: 0.3,
+                      }}
+                    />
+                  )}
+                  {showEndTick && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `${endX}%`,
+                        bottom: 0,
+                        width: '0.0625em',
+                        height: '0.375em',
+                        backgroundColor: 'var(--primary-text-color, #fff)',
+                        opacity: 0.3,
+                      }}
+                    />
+                  )}
                   {/* Icon in the center */}
                   <ha-icon
                     icon={icon}
@@ -195,51 +216,64 @@ export function HourlyChart({
           })()}
         </div>
         
-        {/* Temperature labels overlay */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: `${height}px`,
-          pointerEvents: 'none',
-        }}>
-          {(() => {
-            // Use shared temperature positioner
-            const { getTempY } = createTemperaturePositioner(forecast, height, pixelsPerDegree);
-            
-            return forecast.map((hour, index) => {
-              const date = new Date(hour.datetime);
-              const hourNum = date.getHours();
+        {/* Canvas for visualization */}
+        <div style={{ position: 'relative' }}>
+          <canvas
+            ref={canvasRef}
+            style={{
+              width: '100%',
+              height: `${height}px`,
+              borderRadius: '8px',
+              display: 'block',
+            }}
+          />
+          
+          {/* Temperature labels overlay */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: `${height}px`,
+            pointerEvents: 'none',
+          }}>
+            {(() => {
+              // Use shared temperature positioner
+              const { getTempY } = createTemperaturePositioner(forecast, height, pixelsPerDegree);
               
-              // Skip first hour and only show labels for every 3rd hour
-              if (index === 0 || hourNum % 3 !== 0) return null;
-              
-              const temp = hour.temperature ?? 0;
-              const xPercent = (index / (forecast.length - 1)) * 100;
-              
-              // Calculate exact Y position using shared utility
-              const lineY = getTempY(temp);
-              
-              return (
-                <div
-                  key={index}
-                  style={{
-                    position: 'absolute',
-                    left: `${xPercent}%`,
-                    top: `${lineY}px`,
-                    transform: 'translate(-50%, -50%)',
-                    fontSize: '0.75em',
-                    fontWeight: '600',
-                    textShadow: '0 0 0.2em var(--card-background-color, rgba(255,255,255,0.8)), 0 0 0.4em var(--card-background-color, rgba(255,255,255,0.6))',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {Math.round(temp)}°
-                </div>
-              );
-            });
-          })()}
+              return forecast.map((hour, index) => {
+                const date = new Date(hour.datetime);
+                const hourNum = date.getHours();
+                
+                // Skip first hour and only show labels for every 3rd hour
+                if (index === 0 || hourNum % 3 !== 0) return null;
+                
+                const temp = hour.temperature ?? 0;
+                const xPercent = (index / (forecast.length - 1)) * 100;
+                
+                // Calculate exact Y position using shared utility
+                const lineY = getTempY(temp);
+                
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      position: 'absolute',
+                      left: `${xPercent}%`,
+                      top: `${lineY}px`,
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: '0.75em',
+                      fontWeight: '600',
+                      textShadow: '0 0 0.2em var(--card-background-color, rgba(255,255,255,0.8)), 0 0 0.4em var(--card-background-color, rgba(255,255,255,0.6))',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {Math.round(temp)}°
+                  </div>
+                );
+              });
+            })()}
+          </div>
         </div>
         
         {/* Hour timeline below canvas */}
@@ -250,6 +284,7 @@ export function HourlyChart({
           marginTop: '0.0625em',
         }}>
           {forecast.map((hour, index) => {
+            if (index === 0 || index === forecast.length - 1) return null;
             const date = new Date(hour.datetime);
             const hourNum = date.getHours();
             const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
