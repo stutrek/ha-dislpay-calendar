@@ -7,6 +7,7 @@ import type { WeatherForecast, SunTimes } from '../WeatherContext';
 import type { Bounds } from './voronoiRelaxation';
 import { generateRelaxedPoints } from './voronoiRelaxation';
 import { createTemperaturePositioner } from './canvasHelpers';
+import { supportsNativeBlur, blurCanvasInPlace } from './blur';
 
 // ============================================================================
 // Constants
@@ -288,33 +289,40 @@ export function applyTemperatureMask(
     shapeCtx.lineTo(x, y);
   });
   
-  // Complete the shape to bottom-right and back
-  shapeCtx.lineTo(width * dpr, height * dpr);
+  // Complete the shape to bottom-right (using full extended width) and back
+  shapeCtx.lineTo(shapeWidth, height * dpr);
   shapeCtx.closePath();
   
   // Fill with solid white
   shapeCtx.fillStyle = 'white';
   shapeCtx.fill();
   
-  // Create second offscreen canvas for the blurred/brightened mask (account for device pixel ratio)
+  // Create second offscreen canvas for the blurred mask (account for device pixel ratio)
   const maskCanvas = document.createElement('canvas');
   maskCanvas.width = width * dpr;
   maskCanvas.height = height * dpr;
   const maskCtx = maskCanvas.getContext('2d');
   if (!maskCtx) return;
-  // Don't scale maskCtx - we'll draw the shapeCanvas directly at physical pixel coordinates
   
-  // Apply blur filter - blur operates on physical pixels, so we need to scale the radius
-  maskCtx.filter = `blur(${MASK_BLUR_RADIUS * dpr}px)`;
-  // Draw the shape multiple times to make the fade more aggressive
-  // shapeCanvas is already at physical pixel dimensions, so draw at physical coordinates
-  maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS * dpr, 0);
-  maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS * dpr, 0);
-  maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS * dpr, 0);
+  const blurRadius = Math.round(MASK_BLUR_RADIUS * dpr);
   
-  // Now draw the processed mask onto main canvas with destination-out
-  // maskCanvas is at physical pixel dimensions, but main ctx is scaled by dpr
-  // So we need to draw it at the scaled size
+  if (supportsNativeBlur) {
+    // Native filter: apply blur DURING the draw operation
+    // This correctly blurs the off-canvas portions before they're clipped
+    maskCtx.filter = `blur(${blurRadius}px)`;
+    maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS * dpr, 0);
+    maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS * dpr, 0);
+    maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS * dpr, 0);
+    maskCtx.filter = 'none';
+  } else {
+    // Safari fallback: blur the shape canvas first, then draw
+    blurCanvasInPlace(shapeCtx, shapeCanvas.width, shapeCanvas.height, blurRadius * dpr);
+	// only two because this code path is more aggressive
+    maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS * dpr, 0);
+    maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS * dpr, 0);
+  }
+  
+  // Draw the blurred mask onto main canvas with destination-out
   ctx.save();
   ctx.globalCompositeOperation = 'destination-out';
   ctx.drawImage(maskCanvas, 0, 0, width, height);
