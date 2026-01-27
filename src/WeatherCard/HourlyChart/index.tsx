@@ -7,7 +7,7 @@ import type { JSX } from 'preact';
 import { useRef, useEffect } from 'preact/hooks';
 import type { WeatherForecast, SunTimes } from '../WeatherContext';
 import { drawTemperatureLine, createTemperaturePositioner, getWeatherIconForTime } from './canvasHelpers';
-import { drawSkyBackground, drawStars, drawClouds } from './sky';
+import { drawSkyBackground, applyTemperatureMask, drawStars, drawClouds } from './sky';
 import { drawPrecipitation } from './precipitation';
 import './styles'; // registers styles via css`` tagged template
 
@@ -54,6 +54,7 @@ export function HourlyChart({
       
       // Draw layers in order
       drawSkyBackground(canvas, forecast, sunTimes);
+      applyTemperatureMask(canvas, forecast, pixelsPerDegree);
       drawStars(canvas, forecast, sunTimes);
       drawClouds(canvas, forecast, sunTimes);
       drawTemperatureLine(canvas, forecast, pixelsPerDegree);

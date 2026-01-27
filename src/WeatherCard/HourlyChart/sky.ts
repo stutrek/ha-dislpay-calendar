@@ -6,6 +6,7 @@
 import type { WeatherForecast, SunTimes } from '../WeatherContext';
 import type { Bounds } from './voronoiRelaxation';
 import { generateRelaxedPoints } from './voronoiRelaxation';
+import { createTemperaturePositioner } from './canvasHelpers';
 
 // ============================================================================
 // Constants
@@ -18,11 +19,8 @@ const COLORS = {
   nightCloudy: '#1A1F2E',   // Dark charcoal
 };
 
-// Vertical fade parameters (percentage from bottom of canvas)
-const FADE = {
-  transparentEnd: 0.50,   // 0-50% from bottom: transparent
-  opaqueStart: 0.85,      // 85-100% from bottom: fully opaque
-};
+// Blur radius for temperature mask (in pixels)
+const MASK_BLUR_RADIUS = 20;
 
 // ============================================================================
 // Helper Functions
@@ -122,8 +120,8 @@ function drawEmoji(
 // ============================================================================
 
 /**
- * Draw the sky background with horizontal color gradient and vertical transparency mask
- * Preserves sunrise/sunset positioning while fading to transparent at the bottom
+ * Draw the sky background with horizontal color gradient
+ * Preserves sunrise/sunset positioning - mask is applied separately
  */
 export function drawSkyBackground(
   canvas: HTMLCanvasElement,
@@ -139,10 +137,7 @@ export function drawSkyBackground(
   // Clear canvas
   ctx.clearRect(0, 0, width, height);
   
-  // Save context for masking operation
-  ctx.save();
-  
-  // Create horizontal linear gradient (same as before - preserves sunrise/sunset)
+  // Create horizontal linear gradient (preserves sunrise/sunset positioning)
   const gradient = ctx.createLinearGradient(0, 0, width, 0);
   
   // Get timeframe boundaries
@@ -236,32 +231,82 @@ export function drawSkyBackground(
   // Fill the entire canvas with the horizontal gradient
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
+}
+
+/**
+ * Apply a blurred mask based on the temperature line to fade the sky
+ * Creates a soft transition that follows the temperature line contour
+ * Drawing the mask multiple times makes the fade more aggressive
+ */
+export function applyTemperatureMask(
+  canvas: HTMLCanvasElement,
+  forecast: WeatherForecast[],
+  pixelsPerDegree: number
+): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx || !forecast || forecast.length === 0) return;
   
-  // Apply vertical transparency mask using destination-in composite operation
-  // This makes the gradient fade from opaque at top to transparent at bottom
-  ctx.globalCompositeOperation = 'destination-in';
+  const width = canvas.width;
+  const height = canvas.height;
   
-  // Create vertical gradient for the alpha mask
-  // Note: gradient goes from top (y=0) to bottom (y=height)
-  // We want: top = opaque, bottom = transparent
-  // So we work from top: 0-15% opaque, 15-50% fade, 50-100% transparent
-  const alphaMask = ctx.createLinearGradient(0, 0, 0, height);
+  // Use the temperature positioner to get line positions
+  const { getTempY } = createTemperaturePositioner(forecast, height, pixelsPerDegree);
   
-  // Convert FADE values (from bottom) to gradient stops (from top)
-  // FADE.opaqueStart = 0.85 from bottom means 0.15 from top (fully opaque starts here)
-  // FADE.transparentEnd = 0.50 from bottom means 0.50 from top (fully transparent by here)
-  const opaqueFromTop = 1 - FADE.opaqueStart;  // 0.15
-  const transparentFromTop = 1 - FADE.transparentEnd;  // 0.50
+  // Calculate x position for each hour
+  const getHourX = (index: number): number => {
+    return (index / (forecast.length - 1)) * width;
+  };
   
-  alphaMask.addColorStop(0, 'rgba(0,0,0,1)');  // Top: fully opaque
-  alphaMask.addColorStop(opaqueFromTop, 'rgba(0,0,0,1)');  // 15% from top: still opaque
-  alphaMask.addColorStop(transparentFromTop, 'rgba(0,0,0,0)');  // 50% from top: fully transparent
-  alphaMask.addColorStop(1, 'rgba(0,0,0,0)');  // Bottom: transparent
+  // Create offscreen canvas for the shape
+  const shapeCanvas = document.createElement('canvas');
+  shapeCanvas.width = width + MASK_BLUR_RADIUS * 2;
+  shapeCanvas.height = height;
+  const shapeCtx = shapeCanvas.getContext('2d');
+  if (!shapeCtx) return;
   
-  ctx.fillStyle = alphaMask;
-  ctx.fillRect(0, 0, width, height);
+  // Draw the temperature fill shape (area from temp line to bottom)
+  shapeCtx.beginPath();
+  shapeCtx.moveTo(0, height); // Start at bottom-left
   
-  // Restore context to normal composite operation
+  // Follow temperature line
+  forecast.forEach((hour, index) => {
+    let x = getHourX(index) + MASK_BLUR_RADIUS;
+    const y = getTempY(hour.temperature ?? 0);
+	if (index === 0) {
+		x -= MASK_BLUR_RADIUS;
+	}
+	if (index === forecast.length - 1) {
+		x += MASK_BLUR_RADIUS;
+	}
+    shapeCtx.lineTo(x, y);
+  });
+  
+  // Complete the shape to bottom-right and back
+  shapeCtx.lineTo(width, height);
+  shapeCtx.closePath();
+  
+  // Fill with solid white
+  shapeCtx.fillStyle = 'white';
+  shapeCtx.fill();
+  
+  // Create second offscreen canvas for the blurred/brightened mask
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = width;
+  maskCanvas.height = height;
+  const maskCtx = maskCanvas.getContext('2d');
+  if (!maskCtx) return;
+  
+  // Apply blur and brightness to the shape on the mask canvas
+  maskCtx.filter = `blur(${MASK_BLUR_RADIUS}px)`;
+  // Draw the shape multiple times to make the fade more aggressive
+  maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS, 0);
+  maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS, 0);
+  maskCtx.drawImage(shapeCanvas, -MASK_BLUR_RADIUS, 0);
+  
+  // Now draw the processed mask onto main canvas with destination-out
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.drawImage(maskCanvas, 0, 0);
   ctx.restore();
 }
 
@@ -374,7 +419,6 @@ export function drawClouds(
     const segmentArea = segmentWidth * visibleHeight;
     const cloudDensity = 0.008; // clouds per square pixel at 100% coverage
     const cloudCount = Math.max(0, Math.round(segmentArea * cloudDensity * (cloudCoverage / 100)));
-	console.log({hour, cloudCount, cloudCoverage});
     
     if (cloudCount === 0) return;
     
