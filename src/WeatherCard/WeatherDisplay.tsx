@@ -89,7 +89,7 @@ function CurrentTime() {
 
 export function WeatherDisplay() {
   console.log('[WeatherDisplay] RENDER');
-  const { entity, hourlyForecast, dailyForecast, loading, windSpeedUnit, precipitationUnit, sunTimes } = useWeather();
+  const { entity, hourlyForecast, dailyForecast, loading, windSpeedUnit, precipitationUnit, sunTimes, getTemperatureColor } = useWeather();
   
   if (loading && !entity) {
     return <div class="weather-loading">Loading weather...</div>;
@@ -167,6 +167,7 @@ export function WeatherDisplay() {
           sunTimes={sunTimes}
           maxItems={20} 
           height={80}
+          getTemperatureColor={getTemperatureColor}
         />
       )}
 
@@ -179,6 +180,7 @@ export function WeatherDisplay() {
           sunTimes={sunTimes}
           precipitationUnit={precipitationUnit}
           height={100}
+          getTemperatureColor={getTemperatureColor}
         />
       )}
     </div>

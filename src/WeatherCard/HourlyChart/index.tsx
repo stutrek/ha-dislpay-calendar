@@ -21,6 +21,8 @@ export interface HourlyChartProps {
   height?: number;
   pixelsPerDegree?: number;
   maxItems?: number;
+  /** Adaptive temperature color function from context */
+  getTemperatureColor: (temp: number) => string;
 }
 
 // ============================================================================
@@ -32,7 +34,8 @@ export function HourlyChart({
   sunTimes,
   height = 120,
   pixelsPerDegree = 3,
-  maxItems = 12
+  maxItems = 12,
+  getTemperatureColor,
 }: HourlyChartProps): JSX.Element {
   console.log('[HourlyChart] RENDER', { forecastCount: inputForecast.length });
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -70,7 +73,7 @@ export function HourlyChart({
       applyTemperatureMask(canvas, forecast, pixelsPerDegree);
       drawStars(canvas, forecast, sunTimes);
       drawClouds(canvas, forecast, sunTimes);
-      drawTemperatureLine(canvas, forecast, pixelsPerDegree);
+      drawTemperatureLine(canvas, forecast, pixelsPerDegree, getTemperatureColor);
       drawPrecipitation(canvas, forecast); // Drawn last so particles appear on top
     };
 
@@ -83,7 +86,7 @@ export function HourlyChart({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [forecast, sunTimes, height, pixelsPerDegree]);
+  }, [forecast, sunTimes, height, pixelsPerDegree, getTemperatureColor]);
 
   if (!forecast || forecast.length === 0) {
     return (

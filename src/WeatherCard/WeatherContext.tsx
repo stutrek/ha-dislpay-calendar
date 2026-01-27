@@ -9,6 +9,7 @@ import {
   type WeatherForecast,
   type SunEntity,
 } from '../shared/HAContext';
+import { createAdaptiveTemperatureColorFn, getTemperatureColor as getFixedTemperatureColor } from './HourlyChart/colors';
 
 // ============================================================================
 // Types
@@ -39,6 +40,8 @@ export interface WeatherContextValue {
   precipitationUnit: string;
   sunTimes: SunTimes;
   latitude: number | undefined;
+  /** Adaptive temperature color function based on forecast range */
+  getTemperatureColor: (temp: number) => string;
 }
 
 // ============================================================================
@@ -157,6 +160,37 @@ export function WeatherProvider({
     });
   }, [rawDailyForecast]);
   
+  // Create adaptive temperature color function based on all forecast data
+  const getTemperatureColor = useMemo(() => {
+    // Collect all temperatures from hourly and daily forecasts
+    const allTemps: number[] = [];
+    
+    if (hourlyForecast) {
+      hourlyForecast.forEach(item => {
+        if (item.temperature !== undefined) allTemps.push(item.temperature);
+      });
+    }
+    
+    if (dailyForecast) {
+      dailyForecast.forEach(item => {
+        if (item.temperature !== undefined) allTemps.push(item.temperature);
+        if (item.templow !== undefined) allTemps.push(item.templow);
+      });
+    }
+    
+    // If no temperature data, use fixed color function
+    if (allTemps.length === 0) {
+      return getFixedTemperatureColor;
+    }
+    
+    const minTemp = Math.min(...allTemps);
+    const maxTemp = Math.max(...allTemps);
+    
+    // Create adaptive function - 10°F padding expands color range on each side
+    // e.g., forecast 20-40°F → colors span 10-50°F of palette
+    return createAdaptiveTemperatureColorFn(minTemp, maxTemp, 12);
+  }, [hourlyForecast, dailyForecast]);
+  
   const value = useMemo<WeatherContextValue>(() => {
     console.log('[WeatherProvider] useMemo - creating context value');
     return {
@@ -169,8 +203,9 @@ export function WeatherProvider({
     precipitationUnit,
     sunTimes,
     latitude,
+    getTemperatureColor,
   };
-  }, [config, entity, hourlyForecast, dailyForecast, loading, windSpeedUnit, precipitationUnit, sunTimes, latitude]);
+  }, [config, entity, hourlyForecast, dailyForecast, loading, windSpeedUnit, precipitationUnit, sunTimes, latitude, getTemperatureColor]);
   
   return (
     <WeatherContext.Provider value={value}>

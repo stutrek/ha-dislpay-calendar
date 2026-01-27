@@ -5,52 +5,6 @@
 
 import type { WeatherForecast, SunTimes } from '../WeatherContext';
 
-
-/**
- * Get color for a temperature value (0°F to 104°F extended range)
- * Uses smooth interpolation between key temperature points
- */
-export function getTemperatureColor(temp: number): string {
-  // Define key temperature points and their colors
-  const tempColorStops = [
-    { temp: 0, color: '#6666cc' },    // Deep purple
-    { temp: 10, color: '#8888ff' },   // Freezing purple
-    { temp: 20, color: '#6677ff' },   // Ice blue
-    { temp: 30, color: '#66aaff' },   // Cold blue
-    { temp: 40, color: '#44bbff' },   // Cool blue
-    { temp: 50, color: '#66cc99' },   // Cool green
-    { temp: 60, color: '#88dd88' },   // Mild green
-    { temp: 70, color: '#ffee44' },   // Warm yellow
-    { temp: 80, color: '#ffbb44' },   // Mild orange
-    { temp: 90, color: '#ff8844' },   // Warm orange
-    { temp: 100, color: '#ff4444' },  // Hot red
-    { temp: 104, color: '#cc0000' },  // Deep red
-  ];
-  
-  // Handle edge cases
-  if (temp <= tempColorStops[0].temp) {
-    return tempColorStops[0].color;
-  }
-  if (temp >= tempColorStops[tempColorStops.length - 1].temp) {
-    return tempColorStops[tempColorStops.length - 1].color;
-  }
-  
-  // Find the two color stops to interpolate between
-  for (let i = 0; i < tempColorStops.length - 1; i++) {
-    const lower = tempColorStops[i];
-    const upper = tempColorStops[i + 1];
-    
-    if (temp >= lower.temp && temp <= upper.temp) {
-      // Calculate interpolation factor (0 to 1)
-      const factor = (temp - lower.temp) / (upper.temp - lower.temp);
-      return interpolateColor(lower.color, upper.color, factor);
-    }
-  }
-  
-  // Fallback (should never reach here)
-  return tempColorStops[0].color;
-}
-
 // ============================================================================
 // Weather Icon Mapping
 // ============================================================================
@@ -165,35 +119,6 @@ export function isDaytime(datetime: string, sunTimes: SunTimes): boolean {
   return timeOfDay >= sunriseTime && timeOfDay < sunsetTime;
 }
 
-/**
- * Interpolate between two hex colors based on a factor (0 to 1)
- */
-function interpolateColor(color1: string, color2: string, factor: number): string {
-  const c1 = hexToRgb(color1);
-  const c2 = hexToRgb(color2);
-  
-  const r = Math.round(c1.r + (c2.r - c1.r) * factor);
-  const g = Math.round(c1.g + (c2.g - c1.g) * factor);
-  const b = Math.round(c1.b + (c2.b - c1.b) * factor);
-  
-  return rgbToHex(r, g, b);
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : { r: 0, g: 0, b: 0 };
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
-}
-
 // ============================================================================
 // Main Drawing Functions
 // ============================================================================
@@ -204,7 +129,8 @@ function rgbToHex(r: number, g: number, b: number): string {
 export function drawTemperatureLine(
   canvas: HTMLCanvasElement,
   forecast: WeatherForecast[],
-  pixelsPerDegree: number
+  pixelsPerDegree: number,
+  colorFn: (temp: number) => string
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx || !forecast || forecast.length === 0) return;
@@ -258,7 +184,7 @@ export function drawTemperatureLine(
   const tempGradient = ctx.createLinearGradient(0, 0, width, 0);
   forecast.forEach((hour, index) => {
     const position = index / (forecast.length - 1);
-    const color = getTemperatureColor(hour.temperature ?? 0);
+    const color = colorFn(hour.temperature ?? 0);
     tempGradient.addColorStop(position, color);
   });
   
@@ -285,7 +211,7 @@ export function drawTemperatureLine(
   const lineGradient = ctx.createLinearGradient(0, 0, width, 0);
   forecast.forEach((hour, index) => {
     const position = index / (forecast.length - 1);
-    const color = getTemperatureColor(hour.temperature ?? 0);
+    const color = colorFn(hour.temperature ?? 0);
     lineGradient.addColorStop(position, color);
   });
   

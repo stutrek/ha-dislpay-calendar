@@ -21,6 +21,8 @@ export interface DailyChartProps {
   height?: number;
   minColumnWidth?: number;
   precipitationUnit?: string;
+  /** Adaptive temperature color function from context */
+  getTemperatureColor: (temp: number) => string;
 }
 
 // ============================================================================
@@ -57,6 +59,7 @@ export function DailyChart({
   height = 120,
   minColumnWidth = 50,
   precipitationUnit = 'in',
+  getTemperatureColor,
 }: DailyChartProps): JSX.Element {
   console.log('[DailyChart] RENDER', { forecastCount: forecast.length });
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -81,7 +84,7 @@ export function DailyChart({
       setActualColumnCount(columnCount);
 
       // Draw layers
-      drawTemperatureBars(canvas, forecast.slice(0, columnCount), columnWidth);
+      drawTemperatureBars(canvas, forecast.slice(0, columnCount), columnWidth, getTemperatureColor);
       drawPrecipitation(canvas, forecast.slice(0, columnCount), columnWidth);
     };
 
@@ -93,7 +96,7 @@ export function DailyChart({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [forecast, sunTimes, height, minColumnWidth]);
+  }, [forecast, sunTimes, height, minColumnWidth, getTemperatureColor]);
 
   if (!forecast || forecast.length === 0) {
     return (

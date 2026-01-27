@@ -1,7 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/preact';
 import { HourlyChart } from '../WeatherCard/HourlyChart';
 import type { SunTimes } from '../WeatherCard/WeatherContext';
+import { createAdaptiveTemperatureColorFn } from '../WeatherCard/HourlyChart/colors';
 import * as samples from './hourlyWeatherSamples';
+
+// Helper to create color function from sample data
+function createColorFnForSample(data: typeof samples.sunnySkyHot) {
+  const temps = data.map(d => d.temperature ?? 70);
+  const min = Math.min(...temps);
+  const max = Math.max(...temps);
+  return createAdaptiveTemperatureColorFn(min, max, 10);
+}
 
 // ============================================================================
 // Meta Configuration
@@ -101,7 +110,11 @@ const AllScenariosGrid = () => {
           }}>
             {scenario.title}
           </h4>
-          <HourlyChart forecast={scenario.data} sunTimes={scenario.sunTimes} />
+          <HourlyChart 
+            forecast={scenario.data} 
+            sunTimes={scenario.sunTimes} 
+            getTemperatureColor={createColorFnForSample(scenario.data)}
+          />
         </div>
       ))}
     </div>
@@ -125,6 +138,7 @@ export const SunnyHot: Story = {
   args: {
     forecast: samples.sunnySkyHot,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunnySkyHot),
   },
 };
 
@@ -133,6 +147,7 @@ export const SunnyMild: Story = {
   args: {
     forecast: samples.sunnySkyMild,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunnySkyMild),
   },
 };
 
@@ -141,6 +156,7 @@ export const SunnyCold: Story = {
   args: {
     forecast: samples.sunnySkyCold,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunnySkyCold),
   },
 };
 
@@ -153,6 +169,7 @@ export const CloudyHot: Story = {
   args: {
     forecast: samples.cloudySkyHot,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.cloudySkyHot),
   },
 };
 
@@ -161,6 +178,7 @@ export const CloudyMild: Story = {
   args: {
     forecast: samples.cloudySkyMild,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.cloudySkyMild),
   },
 };
 
@@ -169,6 +187,7 @@ export const CloudyCold: Story = {
   args: {
     forecast: samples.cloudySkyCold,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.cloudySkyCold),
   },
 };
 
@@ -181,6 +200,7 @@ export const RainyHot: Story = {
   args: {
     forecast: samples.rainyDayHot,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.rainyDayHot),
   },
 };
 
@@ -189,6 +209,7 @@ export const RainyMild: Story = {
   args: {
     forecast: samples.rainyDayMild,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.rainyDayMild),
   },
 };
 
@@ -197,6 +218,7 @@ export const RainyCold: Story = {
   args: {
     forecast: samples.rainyDayCold,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.rainyDayCold),
   },
 };
 
@@ -209,6 +231,7 @@ export const SnowyHot: Story = {
   args: {
     forecast: samples.snowyDayHot,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.snowyDayHot),
   },
 };
 
@@ -217,6 +240,7 @@ export const SnowyMild: Story = {
   args: {
     forecast: samples.snowyDayMild,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.snowyDayMild),
   },
 };
 
@@ -225,6 +249,7 @@ export const SnowyCold: Story = {
   args: {
     forecast: samples.snowyDayCold,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.snowyDayCold),
   },
 };
 
@@ -237,6 +262,7 @@ export const MixedRainHot: Story = {
   args: {
     forecast: samples.mixedRainHot,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.mixedRainHot),
   },
 };
 
@@ -245,6 +271,7 @@ export const MixedRainMild: Story = {
   args: {
     forecast: samples.mixedRainMild,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.mixedRainMild),
   },
 };
 
@@ -253,6 +280,7 @@ export const MixedRainCold: Story = {
   args: {
     forecast: samples.mixedRainCold,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.mixedRainCold),
   },
 };
 
@@ -265,6 +293,7 @@ export const MixedSnowHot: Story = {
   args: {
     forecast: samples.mixedSnowHot,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.mixedSnowHot),
   },
 };
 
@@ -273,6 +302,7 @@ export const MixedSnowMild: Story = {
   args: {
     forecast: samples.mixedSnowMild,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.mixedSnowMild),
   },
 };
 
@@ -281,6 +311,7 @@ export const MixedSnowCold: Story = {
   args: {
     forecast: samples.mixedSnowCold,
     sunTimes: daytimeSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.mixedSnowCold),
   },
 };
 
@@ -293,6 +324,7 @@ export const SunsetHot: Story = {
   args: {
     forecast: samples.sunsetHot,
     sunTimes: sunsetSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunsetHot),
   },
 };
 
@@ -301,6 +333,7 @@ export const SunsetMild: Story = {
   args: {
     forecast: samples.sunsetMild,
     sunTimes: sunsetSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunsetMild),
   },
 };
 
@@ -309,6 +342,7 @@ export const SunsetCold: Story = {
   args: {
     forecast: samples.sunsetCold,
     sunTimes: sunsetSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunsetCold),
   },
 };
 
@@ -321,6 +355,7 @@ export const SunriseHot: Story = {
   args: {
     forecast: samples.sunriseHot,
     sunTimes: sunriseSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunriseHot),
   },
 };
 
@@ -329,6 +364,7 @@ export const SunriseMild: Story = {
   args: {
     forecast: samples.sunriseMild,
     sunTimes: sunriseSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunriseMild),
   },
 };
 
@@ -337,5 +373,6 @@ export const SunriseCold: Story = {
   args: {
     forecast: samples.sunriseCold,
     sunTimes: sunriseSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.sunriseCold),
   },
 };

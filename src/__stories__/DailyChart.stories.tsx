@@ -5,6 +5,8 @@
 
 import type { Meta, StoryObj } from '@storybook/preact';
 import { DailyChart } from '../WeatherCard/DailyChart';
+import { createAdaptiveTemperatureColorFn } from '../WeatherCard/HourlyChart/colors';
+import type { WeatherForecast } from '../WeatherCard/WeatherContext';
 import {
   sunnyWeekHot,
   mixedWeek,
@@ -15,6 +17,18 @@ import {
   twoWeekForecast,
   defaultSunTimes,
 } from './dailyWeatherSamples';
+
+// Helper to create color function from daily forecast data
+function createColorFnForDaily(data: WeatherForecast[]) {
+  const temps: number[] = [];
+  data.forEach(d => {
+    if (d.temperature !== undefined) temps.push(d.temperature);
+    if (d.templow !== undefined) temps.push(d.templow);
+  });
+  const min = Math.min(...temps);
+  const max = Math.max(...temps);
+  return createAdaptiveTemperatureColorFn(min, max, 10);
+}
 
 // ============================================================================
 // Storybook Meta
@@ -65,6 +79,7 @@ export const SunnyWeekHot: Story = {
     height: 120,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(sunnyWeekHot),
   },
 };
 
@@ -75,6 +90,7 @@ export const MixedWeather: Story = {
     height: 120,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(mixedWeek),
   },
 };
 
@@ -85,6 +101,7 @@ export const RainyWeek: Story = {
     height: 120,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(rainyWeek),
   },
 };
 
@@ -95,6 +112,7 @@ export const SnowyWeek: Story = {
     height: 120,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(snowyWeek),
   },
 };
 
@@ -105,6 +123,7 @@ export const VariableWeek: Story = {
     height: 120,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(variableWeek),
   },
 };
 
@@ -115,6 +134,7 @@ export const ThreeDays: Story = {
     height: 120,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(threeDayForecast),
   },
 };
 
@@ -125,6 +145,7 @@ export const TwoWeeks: Story = {
     height: 120,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(twoWeekForecast),
   },
 };
 
@@ -135,6 +156,7 @@ export const TallCanvas: Story = {
     height: 180,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(mixedWeek),
   },
 };
 
@@ -145,6 +167,7 @@ export const ShortCanvas: Story = {
     height: 80,
     minColumnWidth: 50,
     precipitationUnit: 'in',
+    getTemperatureColor: createColorFnForDaily(mixedWeek),
   },
 };
 
@@ -155,6 +178,7 @@ export const MetricUnits: Story = {
     height: 120,
     minColumnWidth: 50,
     precipitationUnit: 'mm',
+    getTemperatureColor: createColorFnForDaily(rainyWeek),
   },
 };
 
@@ -209,6 +233,7 @@ const AllScenariosGrid = () => {
             height={120}
             minColumnWidth={50}
             precipitationUnit="in"
+            getTemperatureColor={createColorFnForDaily(scenario.data)}
           />
         </div>
       ))}

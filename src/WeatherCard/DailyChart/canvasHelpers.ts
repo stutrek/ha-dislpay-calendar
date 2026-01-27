@@ -4,7 +4,6 @@
 // ============================================================================
 
 import type { WeatherForecast } from '../WeatherContext';
-import { getTemperatureColor } from '../HourlyChart/canvasHelpers';
 
 // ============================================================================
 // Temperature Bar Positioning
@@ -60,7 +59,8 @@ export function createBarPositioner(
 export function drawTemperatureBars(
   canvas: HTMLCanvasElement,
   forecast: WeatherForecast[],
-  columnWidth: number
+  columnWidth: number,
+  colorFn: (temp: number) => string
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx || !forecast || forecast.length === 0) return;
@@ -88,8 +88,8 @@ export function drawTemperatureBars(
     
     // Create vertical gradient from high temp to low temp
     const gradient = ctx.createLinearGradient(0, barTop, 0, barBottom);
-    gradient.addColorStop(0, getTemperatureColor(highTemp));
-    gradient.addColorStop(1, getTemperatureColor(lowTemp));
+    gradient.addColorStop(0, colorFn(highTemp));
+    gradient.addColorStop(1, colorFn(lowTemp));
     
     // Draw rounded bar
     ctx.fillStyle = gradient;
