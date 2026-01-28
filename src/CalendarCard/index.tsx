@@ -30,7 +30,7 @@ interface CalendarCardContentProps {
 export function CalendarCardInner() {
   console.log('[CalendarCardInner] RENDER');
   const { loading, refreshing } = useCalendar();
-  
+
   return (
     <>
       {refreshing && !loading && (
@@ -51,19 +51,18 @@ export function CalendarCardInner() {
 function CalendarCardContent({ config, hass, subscribeToEntity }: CalendarCardContentProps) {
   console.log('[CalendarCardContent] RENDER', { config, statesCount: Object.keys(hass.states).length });
   const sizeClass = `size-${config.fontSize || 'small'}`;
+  // Use a wrapper div instead of Fragment for stable Preact diffing in shadow DOM
   return (
-    <>
-      <style>{getAllStyles()}</style>
-      <ha-card class={sizeClass}>
-        <div class="card-content calendar-card">
-          <HAProvider hass={hass} subscribeToEntity={subscribeToEntity}>
-            <CalendarProvider config={config}>
-              <CalendarCardInner />
-            </CalendarProvider>
-          </HAProvider>
-        </div>
-      </ha-card>
-    </>
+    <HAProvider hass={hass} subscribeToEntity={subscribeToEntity}>
+      <CalendarProvider config={config}>
+        <ha-card class={sizeClass}>
+          <style>{getAllStyles()}</style>
+          <div class="card-content calendar-card">
+            <CalendarCardInner />
+          </div>
+        </ha-card>
+      </CalendarProvider>
+    </HAProvider>
   );
 }
 
@@ -78,11 +77,11 @@ class DisplayCalendarCard extends BaseHACard<CardConfig> {
 
   protected _getEntityIds(): string[] {
     if (!this._config) return [];
-    
+
     const entityIds: string[] = [
       ...this._config.calendars.map(c => c.entityId),
     ];
-    
+
     if (this._config.weatherEntity) {
       entityIds.push(this._config.weatherEntity);
     }
@@ -96,13 +95,14 @@ class DisplayCalendarCard extends BaseHACard<CardConfig> {
       ...config,
       calendars: config.calendars ?? [],
     };
-    
+
     if (this._hass) {
       this._subscribe();
     }
   }
 
   protected _render() {
+    console.log('[CalendarCard] _render');
     if (!this._config) {
       render(<div>No config</div>, this._shadowRoot);
       return;
@@ -117,14 +117,14 @@ class DisplayCalendarCard extends BaseHACard<CardConfig> {
     if (this._config.calendars.length === 0) {
       const sizeClass = `size-${this._config.fontSize || 'small'}`;
       render(
-        <>
+        <div>
           <style>{getAllStyles()}</style>
           <ha-card class={sizeClass}>
             <div class="card-content calendar-card">
               <div class="calendar-loading">Add a calendar to get started</div>
             </div>
           </ha-card>
-        </>,
+        </div>,
         this._shadowRoot
       );
       return;

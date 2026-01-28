@@ -114,11 +114,11 @@ export function WeatherProvider({
     // Forecasts from forecast_entity (or primary entity if not specified)
     const hourlyResult = useWeatherForecast(forecastEntity, 'hourly');
     hookHourlyForecast = hourlyResult.forecast;
-    hookLoading = hourlyResult.loading;
+    hookLoading = hourlyResult.status === 'loading';
     
     const dailyResult = useWeatherForecast(forecastEntity, 'daily');
     hookDailyForecast = dailyResult.forecast;
-    hookLoading = hookLoading || dailyResult.loading;
+    hookLoading = hookLoading || dailyResult.status === 'loading';
   } catch {
     // Not inside HAProvider - hooks will throw
     // This is expected when using prop data in Storybook

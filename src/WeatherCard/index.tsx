@@ -28,20 +28,19 @@ interface WeatherCardContentProps {
 function WeatherCardContent({ config, hass, subscribeToEntity }: WeatherCardContentProps) {
   console.log('[WeatherCardContent] RENDER', { config, statesCount: Object.keys(hass.states).length });
   const sizeClass = `size-${config.size ?? 'medium'}`;
-  
+
+  // Use a wrapper div instead of Fragment for stable Preact diffing in shadow DOM
   return (
-    <>
-      <style>{getAllStyles()}</style>
-      <ha-card class={sizeClass}>
-        <div class="card-content weather-card">
-          <HAProvider hass={hass} subscribeToEntity={subscribeToEntity}>
-            <WeatherProvider config={config}>
-              <WeatherDisplay />
-            </WeatherProvider>
-          </HAProvider>
-        </div>
-      </ha-card>
-    </>
+    <HAProvider hass={hass} subscribeToEntity={subscribeToEntity}>
+      <WeatherProvider config={config}>
+        <ha-card class={sizeClass}>
+          <style>{getAllStyles()}</style>
+          <div class="card-content weather-card">
+            <WeatherDisplay />
+          </div>
+        </ha-card>
+      </WeatherProvider>
+    </HAProvider>
   );
 }
 
@@ -56,13 +55,13 @@ class DisplayWeatherCard extends BaseHACard<CardConfig> {
 
   protected _getEntityIds(): string[] {
     if (!this._config) return [];
-    
+
     const entityIds: string[] = [this._config.entity];
-    
+
     if (this._config.forecast_entity && this._config.forecast_entity !== this._config.entity) {
       entityIds.push(this._config.forecast_entity);
     }
-    
+
     entityIds.push('sun.sun');
 
     return entityIds;
@@ -72,9 +71,9 @@ class DisplayWeatherCard extends BaseHACard<CardConfig> {
     if (!config.entity) {
       throw new Error('Please define an entity (weather entity for current conditions)');
     }
-    
+
     this._config = config;
-    
+
     if (this._hass) {
       this._subscribe();
     }
@@ -90,6 +89,8 @@ class DisplayWeatherCard extends BaseHACard<CardConfig> {
       render(<div class="weather-loading">Loading...</div>, this._shadowRoot);
       return;
     }
+
+    console.log('[WeatherCard] _render');
 
     render(
       <WeatherCardContent config={this._config} hass={this._hass} subscribeToEntity={this._subscribeToEntity} />,

@@ -10,6 +10,7 @@ export abstract class BaseHACard<TConfig> extends HTMLElement {
   protected _shadowRoot: ShadowRoot;
   private _unsubscribe?: () => void;
   private _entityChangeListeners = new Map<string, Set<(entity: any) => void>>();
+  private _subscribeId = 0; // Guard against overlapping subscribe calls
 
   constructor() {
     super();
@@ -43,6 +44,13 @@ export abstract class BaseHACard<TConfig> extends HTMLElement {
   protected async _subscribe() {
     if (!this._hass || !this._config) return;
 
+    // Increment ID to invalidate any in-flight subscribe calls
+    const subscribeId = ++this._subscribeId;
+
+    // Unsubscribe from previous subscription
+    this._unsubscribe?.();
+    this._unsubscribe = undefined;
+
     const entityIds = this._getEntityIds();
 
     if (entityIds.length === 0) {
@@ -54,7 +62,7 @@ export abstract class BaseHACard<TConfig> extends HTMLElement {
     console.log(`[${this.getCardName()}] Subscribing to:`, entityIds);
 
     try {
-      this._unsubscribe = await this._hass.connection.subscribeMessage<{
+      const unsubscribe = await this._hass.connection.subscribeMessage<{
         entity_id: string;
         new_state: any;
         old_state: any;
@@ -73,11 +81,21 @@ export abstract class BaseHACard<TConfig> extends HTMLElement {
           entity_ids: entityIds,
         }
       );
-      
-      this._render();
+
+      // Only use this subscription if it's still the latest
+      if (subscribeId === this._subscribeId) {
+        this._unsubscribe = unsubscribe;
+        this._render();
+      } else {
+        // Stale subscription, clean it up
+        unsubscribe();
+      }
     } catch (err) {
-      console.error(`[${this.getCardName()}] Subscription failed:`, err);
-      this._render();
+      // Only handle error if this is still the latest subscribe call
+      if (subscribeId === this._subscribeId) {
+        console.error(`[${this.getCardName()}] Subscription failed:`, err);
+        this._render();
+      }
     }
   }
 

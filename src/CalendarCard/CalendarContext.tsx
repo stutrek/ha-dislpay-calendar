@@ -375,13 +375,13 @@ export function CalendarProvider({
   try {
     const eventsResult = useMultiCalendarEvents(calendarEntityIds, dateRange);
     hookEvents = eventsResult.events;
-    hookLoading = eventsResult.loading;
-    hookRefreshing = eventsResult.refreshing;
+    hookLoading = eventsResult.status === 'loading';
+    hookRefreshing = eventsResult.status === 'cached' || eventsResult.status === 'refreshing';
     
     if (config.weatherEntity) {
       const forecastResult = useWeatherForecast(config.weatherEntity, 'hourly');
       hookForecast = forecastResult.forecast;
-      hookLoading = hookLoading || forecastResult.loading;
+      hookLoading = hookLoading || forecastResult.status === 'loading';
     }
   } catch {
     // Not inside HAProvider - hooks will throw

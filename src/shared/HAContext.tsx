@@ -10,6 +10,7 @@ import type {
   Connection,
 } from 'home-assistant-js-websocket';
 import { useCallbackStable } from './useCallbackStable';
+import { loadFromCache, saveToCache } from './cacheUtils';
 import type { ComponentChildren } from 'preact';
 
 // ============================================================================
@@ -229,19 +230,23 @@ function useHAStore(): HAStore {
  */
 export function useEntity<T extends string>(entityId: T): EntityForId<T> | undefined {
   const store = useHAStore();
-  
-  // Initial state from current hass
-  const [entity, setEntity] = useState<EntityForId<T> | undefined>(() => 
-    store.hass?.states[entityId] as EntityForId<T> | undefined
-  );
+  const cacheKey = `entity:${entityId}`;
+
+  // Initial state: prefer current hass, fall back to cache
+  const [entity, setEntity] = useState<EntityForId<T> | undefined>(() => {
+    const current = store.hass?.states[entityId] as EntityForId<T> | undefined;
+    if (current) return current;
+    return loadFromCache<EntityForId<T>>(cacheKey);
+  });
 
   useEffect(() => {
     console.log(`[useEntity] Subscribing to ${entityId}`);
-    
+
     // Subscribe to entity changes via web component
     const unsubscribe = store.subscribeToEntity(entityId, (newEntity) => {
       console.log(`[useEntity] ${entityId} changed, updating state`);
       setEntity(newEntity as EntityForId<T>);
+      saveToCache(cacheKey, newEntity); // Save to cache on update
     });
 
     // Cleanup on unmount or entityId change
@@ -249,7 +254,7 @@ export function useEntity<T extends string>(entityId: T): EntityForId<T> | undef
       console.log(`[useEntity] Unsubscribing from ${entityId}`);
       unsubscribe();
     };
-  }, [entityId, store.subscribeToEntity]);
+  }, [entityId, store.subscribeToEntity, cacheKey]);
 
   return entity;
 }
@@ -263,6 +268,82 @@ export function useEntity<T extends string>(entityId: T): EntityForId<T> | undef
 export function useHass(): { getHass: () => HomeAssistant | undefined } {
   const store = useHAStore();
   return { getHass: store.getHass };
+}
+
+// ============================================================================
+// Cached Fetch Hook
+// ============================================================================
+
+export type FetchStatus = 'loading' | 'cached' | 'ready' | 'refreshing';
+
+interface UseCachedFetchResult<T> {
+  data: T | undefined;
+  status: FetchStatus;
+  error: Error | undefined;
+  refetch: () => void;
+}
+
+/**
+ * Generic hook for fetching data with localStorage caching.
+ * Returns a cache-aware status string to distinguish cached vs fresh data.
+ *
+ * @param cacheKey Unique key for localStorage cache
+ * @param fetcher Async function that fetches the data
+ * @param deps Dependencies array - refetch when these change
+ * @returns Data, status, error, and refetch function
+ */
+export function useCachedFetch<T>(
+  cacheKey: string,
+  fetcher: () => Promise<T>,
+  deps: unknown[]
+): UseCachedFetchResult<T> {
+  // Initialize from cache
+  const [data, setData] = useState<T | undefined>(() => loadFromCache<T>(cacheKey));
+  const [isFresh, setIsFresh] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState<Error | undefined>(undefined);
+
+  const fetchIdRef = useRef(0);
+
+  const doFetch = useCallbackStable(async () => {
+    const fetchId = ++fetchIdRef.current;
+    setIsFetching(true);
+    setError(undefined);
+
+    try {
+      const result = await fetcher();
+
+      if (fetchId === fetchIdRef.current) {
+        setData(result);
+        setIsFresh(true);
+        saveToCache(cacheKey, result);
+      }
+    } catch (err) {
+      if (fetchId === fetchIdRef.current) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    } finally {
+      if (fetchId === fetchIdRef.current) {
+        setIsFetching(false);
+      }
+    }
+  });
+
+  // Fetch on mount and when deps change
+  useEffect(() => {
+    doFetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  // Derive status
+  const status: FetchStatus = useMemo(() => {
+    if (!data && isFetching) return 'loading';
+    if (data && !isFresh && isFetching) return 'cached';
+    if (data && isFresh && isFetching) return 'refreshing';
+    return 'ready';
+  }, [data, isFresh, isFetching]);
+
+  return { data, status, error, refetch: doFetch };
 }
 
 // ============================================================================
@@ -350,19 +431,18 @@ export function useCalendarEvents(
 
 interface UseMultiCalendarEventsResult {
   events: CalendarEventWithSource[] | undefined;
-  loading: boolean;
-  refreshing: boolean;
+  status: FetchStatus;
   error: Error | undefined;
   refetch: () => void;
 }
 
 /**
- * Fetch calendar events from multiple calendars for a date range.
+ * Fetch calendar events from multiple calendars for a date range with localStorage caching.
  * Events are returned with their source calendarId attached.
  * 
  * @param entityIds Array of calendar entity IDs (e.g., ['calendar.family', 'calendar.work'])
  * @param options Date range to fetch events for
- * @returns Events array with calendarId, loading state, error, and refetch function
+ * @returns Events array with calendarId, status, error, and refetch function
  */
 export function useMultiCalendarEvents(
   entityIds: `calendar.${string}`[],
@@ -370,138 +450,80 @@ export function useMultiCalendarEvents(
 ): UseMultiCalendarEventsResult {
   const store = useHAStore();
   const { getHass } = useHass();
-  const [events, setEvents] = useState<CalendarEventWithSource[] | undefined>(undefined);
-  const [eventsDateRangeKey, setEventsDateRangeKey] = useState<string>('');
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<Error | undefined>(undefined);
-  
-  // Track current fetch to avoid race conditions on data updates
-  const fetchIdRef = useRef(0);
-  
-  // Track in-flight request count for refreshing indicator
-  const inFlightCountRef = useRef(0);
-  
+
   // Debounce timer for entity change triggers
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-  // Cache for previously loaded date ranges
-  const cacheRef = useRef<Map<string, CalendarEventWithSource[]>>(new Map());
-  
-  // Flag to indicate cache should be cleared when next fetch completes
-  const shouldInvalidateCacheRef = useRef(false);
-  
+
   // Stable serialization of entityIds for dependency tracking
   const entityIdsKey = entityIds.join(',');
-  
+
   // Cache key for current date range
   const dateRangeKey = `${options.start.getTime()}-${options.end.getTime()}`;
+  const cacheKey = `events:${entityIdsKey}:${dateRangeKey}`;
 
-  const fetchAllEvents = useCallbackStable(async () => {
+  const fetcher = useCallbackStable(async () => {
     const hass = getHass();
     if (!hass?.connection) {
-      setError(new Error('Home Assistant connection not available'));
-      return;
+      throw new Error('Home Assistant connection not available');
     }
 
     if (entityIds.length === 0) {
-      setEvents([]);
-      return;
+      return [];
     }
 
-    const fetchId = ++fetchIdRef.current;
-    inFlightCountRef.current++;
-    setRefreshing(true);
-    setError(undefined);
+    // Fetch all calendars in parallel
+    const results = await Promise.all(
+      entityIds.map(async (entityId) => {
+        try {
+          const result = await hass.connection.sendMessagePromise<{
+            response: { [key: string]: { events: CalendarEvent[] } };
+          }>({
+            type: 'call_service',
+            domain: 'calendar',
+            service: 'get_events',
+            service_data: {
+              start_date_time: options.start.toISOString(),
+              end_date_time: options.end.toISOString(),
+            },
+            target: { entity_id: entityId },
+            return_response: true,
+          });
 
-    try {
-      // Fetch all calendars in parallel
-      const results = await Promise.all(
-        entityIds.map(async (entityId) => {
-          try {
-            const result = await hass.connection.sendMessagePromise<{
-              response: { [key: string]: { events: CalendarEvent[] } };
-            }>({
-              type: 'call_service',
-              domain: 'calendar',
-              service: 'get_events',
-              service_data: {
-                start_date_time: options.start.toISOString(),
-                end_date_time: options.end.toISOString(),
-              },
-              target: { entity_id: entityId },
-              return_response: true,
-            });
-            
-            const calendarEvents = result.response?.[entityId]?.events ?? [];
-            // Attach calendarId to each event
-            return calendarEvents.map((event): CalendarEventWithSource => ({
-              ...event,
-              calendarId: entityId,
-            }));
-          } catch (err) {
-            console.error(`Failed to fetch events for ${entityId}:`, err);
-            return []; // Return empty array for failed calendar, don't fail everything
-          }
-        })
-      );
-
-      // Only update data if this is still the latest fetch
-      if (fetchId === fetchIdRef.current) {
-        // Flatten all events into a single array
-        const allEvents = results.flat();
-        // Clear cache if this was an invalidating fetch (entity changed)
-        if (shouldInvalidateCacheRef.current) {
-          cacheRef.current.clear();
-          shouldInvalidateCacheRef.current = false;
+          const calendarEvents = result.response?.[entityId]?.events ?? [];
+          // Attach calendarId to each event
+          return calendarEvents.map((event): CalendarEventWithSource => ({
+            ...event,
+            calendarId: entityId,
+          }));
+        } catch (err) {
+          console.error(`Failed to fetch events for ${entityId}:`, err);
+          return []; // Return empty array for failed calendar, don't fail everything
         }
-        // Cache the results for this date range
-        cacheRef.current.set(dateRangeKey, allEvents);
-        setEvents(allEvents);
-        setEventsDateRangeKey(dateRangeKey);
-      }
-    } catch (err) {
-      if (fetchId === fetchIdRef.current) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    } finally {
-      // Decrement in-flight count and clear refreshing only when all fetches complete
-      inFlightCountRef.current--;
-      if (inFlightCountRef.current === 0) {
-        setRefreshing(false);
-      }
-    }
+      })
+    );
+
+    return results.flat();
   });
 
-  // Debounced refetch for entity changes (invalidates cache once new data arrives)
+  const { data: events, status, error, refetch } = useCachedFetch(
+    cacheKey,
+    fetcher,
+    [entityIdsKey, dateRangeKey]
+  );
+
+  // Debounced refetch for entity changes
   const debouncedRefetch = useCallbackStable(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     debounceTimerRef.current = setTimeout(() => {
-      // Mark cache for invalidation (cleared when new data arrives)
-      shouldInvalidateCacheRef.current = true;
-      fetchAllEvents();
+      refetch();
     }, 500); // 500ms debounce
   });
 
-  // Fetch when dependencies change (immediate, not debounced)
-  // Skip fetch if we have valid cached data - entity changes will invalidate cache
-  useEffect(() => {
-    const cached = cacheRef.current.get(dateRangeKey);
-    // Fetch if: no cache, OR cache is marked for invalidation (entity changed)
-    if (!cached || shouldInvalidateCacheRef.current) {
-      fetchAllEvents();
-    }
-  }, [entityIdsKey, dateRangeKey, fetchAllEvents]);
-
-  // Invalidate cache when calendar entities change
-  useEffect(() => {
-    shouldInvalidateCacheRef.current = true;
-  }, [entityIdsKey]);
-
   // Subscribe to entity changes and refetch (debounced)
   useEffect(() => {
-    const unsubscribes = entityIds.map(entityId => 
+    const unsubscribes = entityIds.map(entityId =>
       store.subscribeToEntity(entityId, debouncedRefetch)
     );
     return () => {
@@ -512,19 +534,7 @@ export function useMultiCalendarEvents(
     };
   }, [entityIdsKey, store.subscribeToEntity, debouncedRefetch]);
 
-  // Synchronously check cache for current date range (avoids flash on navigation)
-  // This runs during render, so cached data is available immediately
-  const cachedEvents = cacheRef.current.get(dateRangeKey);
-  
-  // Use cached data if available, otherwise use fetched state only if it matches current date range
-  // This prevents showing stale data from a different month
-  const fetchedEventsForRange = eventsDateRangeKey === dateRangeKey ? events : undefined;
-  const effectiveEvents = cachedEvents ?? fetchedEventsForRange;
-  
-  // loading = true only when we have no data (not cached, not fetched)
-  const loading = effectiveEvents === undefined && refreshing;
-
-  return { events: effectiveEvents, loading, refreshing, error, refetch: fetchAllEvents };
+  return { events, status, error, refetch };
 }
 // ============================================================================
 // Weather Forecast Hook
@@ -532,17 +542,17 @@ export function useMultiCalendarEvents(
 
 interface UseWeatherForecastResult {
   forecast: WeatherForecast[] | undefined;
-  loading: boolean;
+  status: FetchStatus;
   error: Error | undefined;
   refetch: () => void;
 }
 
 /**
- * Fetch weather forecast data.
+ * Fetch weather forecast data with localStorage caching.
  * 
  * @param entityId Weather entity ID (e.g., 'weather.home')
  * @param type Forecast type: 'daily', 'hourly', or 'twice_daily'
- * @returns Forecast array, loading state, error, and refetch function
+ * @returns Forecast array, status, error, and refetch function
  */
 export function useWeatherForecast(
   entityId: `weather.${string}`,
@@ -550,56 +560,39 @@ export function useWeatherForecast(
 ): UseWeatherForecastResult {
   const store = useHAStore();
   const { getHass } = useHass();
-  const [forecast, setForecast] = useState<WeatherForecast[] | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | undefined>(undefined);
-  
-  // Track current fetch to avoid race conditions
-  const fetchIdRef = useRef(0);
-  
+  const cacheKey = `forecast:${entityId}:${type}`;
+
   // Debounce timer for entity change triggers
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // Timer for hourly refetch
   const hourlyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchForecast = useCallbackStable(async () => {
+  const fetcher = useCallbackStable(async () => {
     const hass = getHass();
     if (!hass?.connection) {
-      setError(new Error('Home Assistant connection not available'));
-      return;
+      throw new Error('Home Assistant connection not available');
     }
 
-    const fetchId = ++fetchIdRef.current;
-    setLoading(true);
-    setError(undefined);
+    const result = await hass.connection.sendMessagePromise<{
+      response: { [entityId: string]: { forecast: WeatherForecast[] } };
+    }>({
+      type: 'call_service',
+      domain: 'weather',
+      service: 'get_forecasts',
+      service_data: { type },
+      target: { entity_id: entityId },
+      return_response: true,
+    });
 
-    try {
-      // Use call_service pattern since weather/get_forecasts is a service
-      const result = await hass.connection.sendMessagePromise<{
-        response: { [entityId: string]: { forecast: WeatherForecast[] } };
-      }>({
-        type: 'call_service',
-        domain: 'weather',
-        service: 'get_forecasts',
-        service_data: { type: type },
-        target: { entity_id: entityId },
-        return_response: true,
-      });
-
-      // Only update if this is still the latest fetch
-      if (fetchId === fetchIdRef.current) {
-        const entityForecast = result.response?.[entityId]?.forecast ?? [];
-        setForecast(entityForecast);
-        setLoading(false);
-      }
-    } catch (err) {
-      if (fetchId === fetchIdRef.current) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
-      }
-    }
+    return result.response?.[entityId]?.forecast ?? [];
   });
+
+  const { data: forecast, status, error, refetch } = useCachedFetch(
+    cacheKey,
+    fetcher,
+    [entityId, type]
+  );
 
   // Debounced refetch for entity changes
   const debouncedRefetch = useCallbackStable(() => {
@@ -608,7 +601,7 @@ export function useWeatherForecast(
     }
     debounceTimerRef.current = setTimeout(() => {
       console.log(`[useWeatherForecast] Entity ${entityId} changed, refetching ${type} forecast`);
-      fetchForecast();
+      refetch();
     }, 500); // 500ms debounce
   });
 
@@ -617,35 +610,33 @@ export function useWeatherForecast(
     if (hourlyTimerRef.current) {
       clearTimeout(hourlyTimerRef.current);
     }
-    
+
     // Calculate milliseconds until the next hour
     const now = new Date();
     const nextHour = new Date(now);
     nextHour.setHours(now.getHours() + 1, 0, 0, 0);
     const msUntilNextHour = nextHour.getTime() - now.getTime();
-    
+
     console.log(`[useWeatherForecast] Scheduling next ${type} forecast refetch in ${Math.round(msUntilNextHour / 1000 / 60)} minutes`);
-    
+
     hourlyTimerRef.current = setTimeout(() => {
       console.log(`[useWeatherForecast] Hourly timer triggered, refetching ${type} forecast`);
-      fetchForecast();
+      refetch();
       // Schedule the next refetch after this one completes
       scheduleHourlyRefetch();
     }, msUntilNextHour);
   });
 
-  // Fetch when dependencies change
+  // Schedule hourly refetch on mount
   useEffect(() => {
-    fetchForecast();
-    // Schedule hourly refetch after initial fetch
     scheduleHourlyRefetch();
-  }, [entityId, type, fetchForecast, scheduleHourlyRefetch]);
+  }, [entityId, type, scheduleHourlyRefetch]);
 
   // Subscribe to entity changes and refetch (debounced)
   useEffect(() => {
     console.log(`[useWeatherForecast] Subscribing to ${entityId} for ${type} forecast updates`);
     const unsubscribe = store.subscribeToEntity(entityId, debouncedRefetch);
-    
+
     return () => {
       console.log(`[useWeatherForecast] Unsubscribing from ${entityId}`);
       unsubscribe();
@@ -658,5 +649,5 @@ export function useWeatherForecast(
     };
   }, [entityId, store.subscribeToEntity, debouncedRefetch]);
 
-  return { forecast, loading, error, refetch: fetchForecast };
+  return { forecast, status, error, refetch };
 }
