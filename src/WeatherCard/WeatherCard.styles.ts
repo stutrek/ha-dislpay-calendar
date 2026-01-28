@@ -35,64 +35,82 @@ ha-card.size-large {
   margin: 0.5em 0;
 }
 
-/* Header: temp + icon on left, time on right */
+/* Header: absolute positioning for all elements */
 .weather-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  line-height: 1;
+  position: relative;
   margin-top: 0.25em;
-}
-
-.weather-main {
+  min-height: 4em; /* Adjust based on your needs */
   display: flex;
-  align-items: baseline;
-  gap: 0.125em;
+  flex-direction: row;
+  align-items: space-between;
 }
 
-.weather-icon-large {
-  --mdc-icon-size: 1.25em;
-  color: var(--primary-color, #f59e0b);
-  align-self: center;
+.weather-header-top {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.weather-temp-section {
+  display: flex;
 }
 
 .weather-temp-large {
-  font-size: 1.25em;
+  font-size: 3em;
+  font-weight: 300;
+  line-height: 1;
 }
 
 .weather-feels-like {
+  white-space: nowrap;
   font-size: 0.625em;
-  font-weight: 400;
   color: var(--secondary-text-color, #aaa);
-  margin-left: 0.25em;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.weather-icon-section {
+}
+
+.weather-icon-large {
+  --mdc-icon-size: 3em;
+  color: var(--primary-color, #f59e0b);
+}
+
+.weather-condition-text {
+
+  font-size: 0.625em;
+  color: var(--secondary-text-color, #aaa);
+  white-space: nowrap;
+}
+
+.weather-time-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125em;
+  line-height: 1.1;
 }
 
 .weather-time {
   font-size: 1.25em;
-  line-height: 1;
+  text-align: right;
 }
 
-/* Conditions text */
-.weather-condition {
-  font-size: 0.625em;
-  color: var(--secondary-text-color, #aaa);
-  text-transform: capitalize;
-}
-
-/* Details row */
+/* Details: humidity and wind side by side under time */
 .weather-details {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   font-size: 0.75em;
-  gap: 1em;
 }
 
 /* Humidity / Dewpoint group */
 .weather-detail-group {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.25em;
+  margin-top: 0.25em;
 }
 
 .weather-detail-group ha-icon {
@@ -113,9 +131,7 @@ ha-card.size-large {
 /* Wind section */
 .weather-detail-wind {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
+  align-items: center;
 }
 
 .wind-main {
