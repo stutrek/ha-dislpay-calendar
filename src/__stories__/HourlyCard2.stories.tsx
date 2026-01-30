@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/preact';
-import { HourlyChart } from '../WeatherCard/HourlyChart';
-import type { SunTimes } from '../WeatherCard/WeatherContext';
+import { HourlyChart, type HourlyChartProps } from '../WeatherCard/HourlyChart';
+import type { WeatherForecast } from '../WeatherCard/WeatherContext';
 import { createAdaptiveTemperatureColorFn } from '../WeatherCard/HourlyChart/colors';
 import { getAllStyles } from '../shared/styleRegistry';
 // Import component styles to register them
@@ -8,7 +8,10 @@ import '../WeatherCard/HourlyChart/styles';
 import * as samples from './hourlyWeatherSamples';
 
 // Helper to create color function from sample data
-function createColorFnForSample(data: typeof samples.sunnySkyHot) {
+function createColorFnForSample(data: WeatherForecast[] | undefined) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return createAdaptiveTemperatureColorFn(50, 70, 10);
+  }
   const temps = data.map(d => d.temperature ?? 70);
   const min = Math.min(...temps);
   const max = Math.max(...temps);
@@ -23,7 +26,7 @@ const meta: Meta<typeof HourlyChart> = {
   title: 'Weather/HourlyCard2',
   component: HourlyChart,
   parameters: {
-    layout: 'centered',
+    layout: 'padded',
     backgrounds: {
       default: 'dark',
       values: [{ name: 'dark', value: '#0d0d0d' }],
@@ -33,6 +36,14 @@ const meta: Meta<typeof HourlyChart> = {
     (Story) => (
       <>
         <style>{getAllStyles()}</style>
+        <style>{`
+          :root {
+            --primary-text-color: #000;
+            --card-background-color: rgba(255, 255, 255, 0.1);
+            --ha-card-background: #1c1c1c;
+            font-family: system-ui, -apple-system, sans-serif;
+          }
+        `}</style>
         <Story />
       </>
     ),
@@ -42,348 +53,339 @@ const meta: Meta<typeof HourlyChart> = {
 export default meta;
 type Story = StoryObj<typeof HourlyChart>;
 
-// ============================================================================
-// Sun Times for Different Scenarios
-// ============================================================================
-
-// Standard daytime scenarios (8am start, sunrise at 6am, sunset at 6pm)
-const daytimeSunTimes: SunTimes = {
-  sunrise: new Date('2026-01-24T06:00:00'),
-  sunset: new Date('2026-01-24T18:00:00'),
-  dawn: new Date('2026-01-24T05:30:00'),
-  dusk: new Date('2026-01-24T18:30:00'),
-};
-
-// Sunset scenarios (start at 2pm, sunset at 6pm)
-const sunsetSunTimes: SunTimes = {
-  sunrise: new Date('2026-01-24T06:00:00'),
-  sunset: new Date('2026-01-24T18:00:00'),
-  dawn: new Date('2026-01-24T05:30:00'),
-  dusk: new Date('2026-01-24T18:30:00'),
-};
-
-// Sunrise scenarios (start at 2am, sunrise at 6am)
-const sunriseSunTimes: SunTimes = {
-  sunrise: new Date('2026-01-24T06:00:00'),
-  sunset: new Date('2026-01-24T18:00:00'),
-  dawn: new Date('2026-01-24T05:30:00'),
-  dusk: new Date('2026-01-24T18:30:00'),
-};
+// Extract props type from component
+type HourlyChartStoryArgs = Parameters<typeof HourlyChart>[0];
 
 // ============================================================================
-// All Scenarios Grid
+// Wrapper Component
 // ============================================================================
 
-const AllScenariosGrid = () => {
-  const scenarios = [
-    { title: '☀️ Sunny - Hot', data: samples.sunnySkyHot, sunTimes: daytimeSunTimes },
-    { title: '☀️ Sunny - Mild', data: samples.sunnySkyMild, sunTimes: daytimeSunTimes },
-    { title: '☀️ Sunny - Cold', data: samples.sunnySkyCold, sunTimes: daytimeSunTimes },
-    { title: '☁️ Cloudy - Hot', data: samples.cloudySkyHot, sunTimes: daytimeSunTimes },
-    { title: '☁️ Cloudy - Mild', data: samples.cloudySkyMild, sunTimes: daytimeSunTimes },
-    { title: '☁️ Cloudy - Cold', data: samples.cloudySkyCold, sunTimes: daytimeSunTimes },
-    { title: '🌧️ Rainy - Hot', data: samples.rainyDayHot, sunTimes: daytimeSunTimes },
-    { title: '🌧️ Rainy - Mild', data: samples.rainyDayMild, sunTimes: daytimeSunTimes },
-    { title: '🌧️ Rainy - Cold', data: samples.rainyDayCold, sunTimes: daytimeSunTimes },
-    { title: '❄️ Snowy - Hot', data: samples.snowyDayHot, sunTimes: daytimeSunTimes },
-    { title: '❄️ Snowy - Mild', data: samples.snowyDayMild, sunTimes: daytimeSunTimes },
-    { title: '❄️ Snowy - Cold', data: samples.snowyDayCold, sunTimes: daytimeSunTimes },
-    { title: '🌤️🌧️ Mixed Rain - Hot', data: samples.mixedRainHot, sunTimes: daytimeSunTimes },
-    { title: '🌤️🌧️ Mixed Rain - Mild', data: samples.mixedRainMild, sunTimes: daytimeSunTimes },
-    { title: '🌤️🌧️ Mixed Rain - Cold', data: samples.mixedRainCold, sunTimes: daytimeSunTimes },
-    { title: '🌤️❄️ Mixed Snow - Hot', data: samples.mixedSnowHot, sunTimes: daytimeSunTimes },
-    { title: '🌤️❄️ Mixed Snow - Mild', data: samples.mixedSnowMild, sunTimes: daytimeSunTimes },
-    { title: '🌤️❄️ Mixed Snow - Cold', data: samples.mixedSnowCold, sunTimes: daytimeSunTimes },
-    { title: '🌅 Sunset - Hot', data: samples.sunsetHot, sunTimes: sunsetSunTimes },
-    { title: '🌅 Sunset - Mild', data: samples.sunsetMild, sunTimes: sunsetSunTimes },
-    { title: '🌅 Sunset - Cold', data: samples.sunsetCold, sunTimes: sunsetSunTimes },
-    { title: '🌄 Sunrise - Hot', data: samples.sunriseHot, sunTimes: sunriseSunTimes },
-    { title: '🌄 Sunrise - Mild', data: samples.sunriseMild, sunTimes: sunriseSunTimes },
-    { title: '🌄 Sunrise - Cold', data: samples.sunriseCold, sunTimes: sunriseSunTimes },
+function HourlyChartWrapper(props: HourlyChartProps) {
+  return (
+    <div style={{ width: '400px', padding: '1rem' }}>
+      <HourlyChart {...props} />
+    </div>
+  );
+}
+
+// ============================================================================
+// Pattern Grid Component - Shows all 6 seasons for a pattern
+// ============================================================================
+
+interface PatternGridProps {
+  pattern: Record<string, WeatherForecast[]>;
+  patternName: string;
+}
+
+function PatternGrid({ pattern, patternName }: PatternGridProps) {
+  const seasons = ['winter', 'earlySpring', 'lateSpring', 'summer', 'earlyFall', 'lateFall'];
+  const seasonLabels: Record<string, string> = {
+    winter: 'Winter (25-38°F)',
+    earlySpring: 'Early Spring (40-55°F)',
+    lateSpring: 'Late Spring (55-70°F)',
+    summer: 'Summer (75-90°F)',
+    earlyFall: 'Early Fall (60-75°F)',
+    lateFall: 'Late Fall (38-50°F)',
+  };
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
+      gap: '1.5rem',
+      padding: '2rem',
+      maxWidth: '1800px',
+    }}>
+      {seasons.map((season) => {
+        const data = pattern[season];
+        return (
+          <div key={season} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <h4 style={{
+              margin: 0,
+              color: '#fff',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              textAlign: 'center',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+            }}>
+              {patternName} - {seasonLabels[season]}
+            </h4>
+            <div style={{ width: '400px' }} onClick={() => console.log(data)}>
+              <HourlyChart
+                forecast={data}
+                sunTimes={samples.defaultSunTimes}
+                getTemperatureColor={createColorFnForSample(data)}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================================
+// All Patterns Grid - Shows all 10 patterns at once (one season)
+// ============================================================================
+
+interface AllPatternsGridProps {
+  season: 'winter' | 'earlySpring' | 'lateSpring' | 'summer' | 'earlyFall' | 'lateFall';
+}
+
+function AllPatternsGrid({ season }: AllPatternsGridProps) {
+  const patterns = [
+    { name: 'Building Storm', data: samples.buildingStorm },
+    { name: 'Fog & Thunderstorm', data: samples.fogAndThunderstorm },
+    { name: 'Rainy Morning', data: samples.rainyMorning },
+    { name: 'Drizzle & Thunderstorms', data: samples.drizzleAndThunderstorms },
+    { name: 'Perfect Clear', data: samples.perfectClear },
+    { name: 'Winter Snow', data: samples.winterSnow },
+    { name: 'Cold Front', data: samples.coldFront },
+    { name: 'Marine Layer', data: samples.marineLayer },
+    { name: 'All-Day Overcast', data: samples.allDayOvercast },
+    { name: 'Overnight Snow Clearing', data: samples.overnightSnowClearing },
   ];
 
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
       gap: '1.5rem',
       padding: '2rem',
       maxWidth: '1800px',
     }}>
-      {scenarios.map((scenario, index) => (
-        <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <h4 style={{ 
-            margin: 0, 
-            color: '#fff', 
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            textAlign: 'center',
-          }}>
-            {scenario.title}
-          </h4>
-          <HourlyChart 
-            forecast={scenario.data} 
-            sunTimes={scenario.sunTimes} 
-            getTemperatureColor={createColorFnForSample(scenario.data)}
-          />
-        </div>
-      ))}
+      {patterns.map(({ name, data }) => {
+        const forecast = data[season];
+        return (
+          <div key={name} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <h4 style={{
+              margin: 0,
+              color: '#fff',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              textAlign: 'center',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+            }}>
+              {name}
+            </h4>
+            <div style={{ width: '400px' }} onClick={() => console.log(forecast)}>
+              <HourlyChart
+                forecast={forecast}
+                sunTimes={samples.defaultSunTimes}
+                getTemperatureColor={createColorFnForSample(forecast)}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
+}
+
+// ============================================================================
+// Stories - By Season (All 10 Patterns)
+// ============================================================================
+
+export const WinterAllPatterns: Story = {
+  name: '❄️ Winter - All Patterns',
+  render: () => <AllPatternsGrid season="winter" />,
+  parameters: { layout: 'fullscreen' },
 };
 
-export const AllScenarios: Story = {
-  name: '🌈 All 24 Scenarios',
-  render: () => AllScenariosGrid(),
-  parameters: {
-    layout: 'fullscreen',
-  },
+export const EarlySpringAllPatterns: Story = {
+  name: '🌱 Early Spring - All Patterns',
+  render: () => <AllPatternsGrid season="earlySpring" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const LateSpringAllPatterns: Story = {
+  name: '🌸 Late Spring - All Patterns',
+  render: () => <AllPatternsGrid season="lateSpring" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const SummerAllPatterns: Story = {
+  name: '☀️ Summer - All Patterns',
+  render: () => <AllPatternsGrid season="summer" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const EarlyFallAllPatterns: Story = {
+  name: '🍂 Early Fall - All Patterns',
+  render: () => <AllPatternsGrid season="earlyFall" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const LateFallAllPatterns: Story = {
+  name: '🍁 Late Fall - All Patterns',
+  render: () => <AllPatternsGrid season="lateFall" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+// ============================================================================
+// Stories - By Pattern (All 6 Seasons)
+// ============================================================================
+
+export const BuildingStormAllSeasons: Story = {
+  name: '⛈️ Building Storm - All Seasons',
+  render: () => <PatternGrid pattern={samples.buildingStorm} patternName="Building Storm" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const FogAndThunderstormAllSeasons: Story = {
+  name: '🌫️ Fog & Thunderstorm - All Seasons',
+  render: () => <PatternGrid pattern={samples.fogAndThunderstorm} patternName="Fog & Thunderstorm" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const RainyMorningAllSeasons: Story = {
+  name: '🌧️ Rainy Morning - All Seasons',
+  render: () => <PatternGrid pattern={samples.rainyMorning} patternName="Rainy Morning" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const DrizzleAndThunderstormsAllSeasons: Story = {
+  name: '🌦️ Drizzle & Thunderstorms - All Seasons',
+  render: () => <PatternGrid pattern={samples.drizzleAndThunderstorms} patternName="Drizzle & Thunderstorms" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const PerfectClearAllSeasons: Story = {
+  name: '☀️ Perfect Clear - All Seasons',
+  render: () => <PatternGrid pattern={samples.perfectClear} patternName="Perfect Clear" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const WinterSnowAllSeasons: Story = {
+  name: '❄️ Winter Snow - All Seasons',
+  render: () => <PatternGrid pattern={samples.winterSnow} patternName="Winter Snow" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const ColdFrontAllSeasons: Story = {
+  name: '🌬️ Cold Front - All Seasons',
+  render: () => <PatternGrid pattern={samples.coldFront} patternName="Cold Front" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const MarineLayerAllSeasons: Story = {
+  name: '🌫️ Marine Layer - All Seasons',
+  render: () => <PatternGrid pattern={samples.marineLayer} patternName="Marine Layer" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const AllDayOvercastAllSeasons: Story = {
+  name: '☁️ All-Day Overcast - All Seasons',
+  render: () => <PatternGrid pattern={samples.allDayOvercast} patternName="All-Day Overcast" />,
+  parameters: { layout: 'fullscreen' },
+};
+
+export const OvernightSnowClearingAllSeasons: Story = {
+  name: '🌨️ Overnight Snow Clearing - All Seasons',
+  render: () => <PatternGrid pattern={samples.overnightSnowClearing} patternName="Overnight Snow Clearing" />,
+  parameters: { layout: 'fullscreen' },
 };
 
 // ============================================================================
 // Individual Stories (for detailed viewing)
 // ============================================================================
 
-export const SunnyHot: Story = {
-  name: '☀️ Sunny - Hot (85-100°F)',
+export const BuildingStormSummer: Story = {
+  name: '⛈️ Building Storm - Summer',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.sunnySkyHot,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunnySkyHot),
+    forecast: samples.buildingStorm.summer,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.buildingStorm.summer),
   },
 };
 
-export const SunnyMild: Story = {
-  name: '☀️ Sunny - Mild (55-75°F)',
+export const FogAndThunderstormSummer: Story = {
+  name: '🌫️ Fog & Thunderstorm - Summer',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.sunnySkyMild,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunnySkyMild),
+    forecast: samples.fogAndThunderstorm.summer,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.fogAndThunderstorm.summer),
   },
 };
 
-export const SunnyCold: Story = {
-  name: '☀️ Sunny - Cold (15-35°F)',
+export const RainyMorningFall: Story = {
+  name: '🌧️ Rainy Morning - Fall',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.sunnySkyCold,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunnySkyCold),
+    forecast: samples.rainyMorning.earlyFall,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.rainyMorning.earlyFall),
   },
 };
 
-// ============================================================================
-// Stories - Cloudy Day
-// ============================================================================
-
-export const CloudyHot: Story = {
-  name: '☁️ Cloudy - Hot (85-95°F)',
+export const DrizzleAndThunderstormsSummer: Story = {
+  name: '🌦️ Drizzle & Thunderstorms - Summer',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.cloudySkyHot,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.cloudySkyHot),
+    forecast: samples.drizzleAndThunderstorms.summer,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.drizzleAndThunderstorms.summer),
   },
 };
 
-export const CloudyMild: Story = {
-  name: '☁️ Cloudy - Mild (55-68°F)',
+export const PerfectClearSummer: Story = {
+  name: '☀️ Perfect Clear - Summer',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.cloudySkyMild,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.cloudySkyMild),
+    forecast: samples.perfectClear.summer,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.perfectClear.summer),
   },
 };
 
-export const CloudyCold: Story = {
-  name: '☁️ Cloudy - Cold (15-30°F)',
+export const WinterSnowWinter: Story = {
+  name: '❄️ Winter Snow - Winter',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.cloudySkyCold,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.cloudySkyCold),
+    forecast: samples.winterSnow.winter,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.winterSnow.winter),
   },
 };
 
-// ============================================================================
-// Stories - Rainy Day
-// ============================================================================
-
-export const RainyHot: Story = {
-  name: '🌧️ Rainy - Hot (85-92°F)',
+export const ColdFrontSpring: Story = {
+  name: '🌬️ Cold Front - Spring',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.rainyDayHot,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.rainyDayHot),
+    forecast: samples.coldFront.lateSpring,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.coldFront.lateSpring),
   },
 };
 
-export const RainyMild: Story = {
-  name: '🌧️ Rainy - Mild (55-65°F)',
+export const MarineLayerSummer: Story = {
+  name: '🌫️ Marine Layer - Summer',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.rainyDayMild,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.rainyDayMild),
+    forecast: samples.marineLayer.summer,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.marineLayer.summer),
   },
 };
 
-export const RainyCold: Story = {
-  name: '🌧️ Rainy - Cold (35-42°F)',
+export const AllDayOvercastFall: Story = {
+  name: '☁️ All-Day Overcast - Fall',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.rainyDayCold,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.rainyDayCold),
+    forecast: samples.allDayOvercast.lateFall,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.allDayOvercast.lateFall),
   },
 };
 
-// ============================================================================
-// Stories - Snowy Day
-// ============================================================================
-
-export const SnowyHot: Story = {
-  name: '❄️ Snowy - Hot (85-95°F)',
+export const OvernightSnowClearingWinter: Story = {
+  name: '🌨️ Overnight Snow Clearing - Winter',
+  render: (args) => <HourlyChartWrapper {...(args as unknown as HourlyChartStoryArgs)} />,
   args: {
-    forecast: samples.snowyDayHot,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.snowyDayHot),
-  },
-};
-
-export const SnowyMild: Story = {
-  name: '❄️ Snowy - Mild (55-65°F)',
-  args: {
-    forecast: samples.snowyDayMild,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.snowyDayMild),
-  },
-};
-
-export const SnowyCold: Story = {
-  name: '❄️ Snowy - Cold (15-28°F)',
-  args: {
-    forecast: samples.snowyDayCold,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.snowyDayCold),
-  },
-};
-
-// ============================================================================
-// Stories - Mixed (Sun, Clouds, Rain)
-// ============================================================================
-
-export const MixedRainHot: Story = {
-  name: '🌤️🌧️ Mixed Rain - Hot (85-98°F)',
-  args: {
-    forecast: samples.mixedRainHot,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.mixedRainHot),
-  },
-};
-
-export const MixedRainMild: Story = {
-  name: '🌤️🌧️ Mixed Rain - Mild (55-72°F)',
-  args: {
-    forecast: samples.mixedRainMild,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.mixedRainMild),
-  },
-};
-
-export const MixedRainCold: Story = {
-  name: '🌤️🌧️ Mixed Rain - Cold (15-38°F)',
-  args: {
-    forecast: samples.mixedRainCold,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.mixedRainCold),
-  },
-};
-
-// ============================================================================
-// Stories - Mixed (Sun, Clouds, Snow)
-// ============================================================================
-
-export const MixedSnowHot: Story = {
-  name: '🌤️❄️ Mixed Snow - Hot (85-95°F)',
-  args: {
-    forecast: samples.mixedSnowHot,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.mixedSnowHot),
-  },
-};
-
-export const MixedSnowMild: Story = {
-  name: '🌤️❄️ Mixed Snow - Mild (55-68°F)',
-  args: {
-    forecast: samples.mixedSnowMild,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.mixedSnowMild),
-  },
-};
-
-export const MixedSnowCold: Story = {
-  name: '🌤️❄️ Mixed Snow - Cold (15-32°F)',
-  args: {
-    forecast: samples.mixedSnowCold,
-    sunTimes: daytimeSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.mixedSnowCold),
-  },
-};
-
-// ============================================================================
-// Stories - Sunset
-// ============================================================================
-
-export const SunsetHot: Story = {
-  name: '🌅 Sunset - Hot (80-95°F)',
-  args: {
-    forecast: samples.sunsetHot,
-    sunTimes: sunsetSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunsetHot),
-  },
-};
-
-export const SunsetMild: Story = {
-  name: '🌅 Sunset - Mild (58-70°F)',
-  args: {
-    forecast: samples.sunsetMild,
-    sunTimes: sunsetSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunsetMild),
-  },
-};
-
-export const SunsetCold: Story = {
-  name: '🌅 Sunset - Cold (20-32°F)',
-  args: {
-    forecast: samples.sunsetCold,
-    sunTimes: sunsetSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunsetCold),
-  },
-};
-
-// ============================================================================
-// Stories - Sunrise
-// ============================================================================
-
-export const SunriseHot: Story = {
-  name: '🌄 Sunrise - Hot (75-93°F)',
-  args: {
-    forecast: samples.sunriseHot,
-    sunTimes: sunriseSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunriseHot),
-  },
-};
-
-export const SunriseMild: Story = {
-  name: '🌄 Sunrise - Mild (50-68°F)',
-  args: {
-    forecast: samples.sunriseMild,
-    sunTimes: sunriseSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunriseMild),
-  },
-};
-
-export const SunriseCold: Story = {
-  name: '🌄 Sunrise - Cold (10-28°F)',
-  args: {
-    forecast: samples.sunriseCold,
-    sunTimes: sunriseSunTimes,
-    getTemperatureColor: createColorFnForSample(samples.sunriseCold),
+    forecast: samples.overnightSnowClearing.winter,
+    sunTimes: samples.defaultSunTimes,
+    getTemperatureColor: createColorFnForSample(samples.overnightSnowClearing.winter),
   },
 };

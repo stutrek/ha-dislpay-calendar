@@ -29,8 +29,8 @@ export interface HourlyChartProps {
 // Component
 // ============================================================================
 
-export function HourlyChart({ 
-  forecast: inputForecast, 
+export function HourlyChart({
+  forecast: inputForecast,
   sunTimes,
   height = 120,
   pixelsPerDegree = 3,
@@ -53,21 +53,21 @@ export function HourlyChart({
     const updateCanvas = () => {
       const containerWidth = container.offsetWidth;
       const dpr = window.devicePixelRatio || 1;
-      
+
       // Set CSS size (logical pixels)
       canvas.style.width = `${containerWidth}px`;
       canvas.style.height = `${height}px`;
-      
+
       // Set actual canvas size (physical pixels)
       canvas.width = containerWidth * dpr;
       canvas.height = height * dpr;
-      
+
       // Scale context to match device pixel ratio
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.scale(dpr, dpr);
       }
-      
+
       // Draw layers in order
       drawSkyBackground(canvas, forecast, sunTimes);
       applyTemperatureMask(canvas, forecast, pixelsPerDegree);
@@ -97,7 +97,7 @@ export function HourlyChart({
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="hourly-chart-container"
     >
@@ -109,15 +109,15 @@ export function HourlyChart({
             // Get container width, use a default if not available yet
             const container = containerRef.current;
             const containerWidth = container?.offsetWidth || 400;
-            
+
             // Group consecutive hours with the same condition
             const groups: Array<{ startIndex: number; endIndex: number; condition: string | undefined }> = [];
             let currentGroup: { startIndex: number; endIndex: number; condition: string | undefined } | null = null;
-            
+
             forecast.forEach((hour, index) => {
               // Skip first and last
               if (index === 0 || index === forecast.length - 1) return;
-              
+
               if (!currentGroup || currentGroup.condition !== hour.condition) {
                 // Start new group
                 if (currentGroup) {
@@ -133,42 +133,42 @@ export function HourlyChart({
                 currentGroup.endIndex = index;
               }
             });
-            
+
             // Push the last group
             if (currentGroup) {
               groups.push(currentGroup);
             }
-            
+
             // Find the smallest group width in pixels
             const smallestGroupWidth = Math.min(...groups.map(group => {
               const startX = (group.startIndex / (forecast.length - 1));
               const endX = (group.endIndex / (forecast.length - 1)) + 1;
               return (endX - startX) * (containerWidth / forecast.length);
             }));
-            
+
             // Calculate icon size based on smallest group (max 1.125em)
             // Assume icons need ~24px at 1em font size, scale accordingly
             const maxSize = 1.125;
             const minSize = 0.5;
             const iconSize = Math.max(minSize, Math.min(maxSize, smallestGroupWidth / 24));
-            
+
             // Render consolidated icons with lines
             return groups.map((group, groupIndex) => {
               // Use the middle hour of the group to determine day/night
               const middleIndex = Math.floor((group.startIndex + group.endIndex) / 2);
               const middleHour = forecast[middleIndex];
               const icon = getWeatherIconForTime(group.condition, middleHour.datetime, sunTimes);
-              
+
               // Calculate positions
               const startX = (group.startIndex / (forecast.length - 1)) * 100;
               const endX = (group.endIndex / (forecast.length - 1)) * 100;
               const centerX = (startX + endX) / 2;
-              
+
               // Only show line if group has multiple hours
               const showLine = group.startIndex !== group.endIndex;
               // Only show end tick if not the last group (and has multiple hours)
               const showEndTick = groupIndex < groups.length - 1 && showLine;
-              
+
               return (
                 <div key={groupIndex}>
                   {/* Horizontal line underneath the icons - only for multi-hour conditions */}
@@ -181,7 +181,7 @@ export function HourlyChart({
                       }}
                     />
                   )}
-                  
+
                   {/* End tick mark - creates the gap between conditions */}
                   {showLine && (
                     <div
@@ -213,7 +213,7 @@ export function HourlyChart({
             });
           })()}
         </div>
-        
+
         {/* Canvas for visualization */}
         <div className="hourly-canvas-wrapper">
           <canvas
@@ -223,9 +223,9 @@ export function HourlyChart({
               height: `${height}px`,
             }}
           />
-          
+
           {/* Temperature labels overlay */}
-          <div 
+          <div
             className="hourly-temp-overlay"
             style={{
               height: `${height}px`,
@@ -234,21 +234,21 @@ export function HourlyChart({
             {(() => {
               // Use shared temperature positioner
               const { getTempY } = createTemperaturePositioner(forecast, height, pixelsPerDegree);
-              
+
               return forecast.map((hour, index) => {
                 if (index === 0 || index === forecast.length - 1) return null;
                 const date = new Date(hour.datetime);
                 const hourNum = date.getHours();
-                
+
                 // Skip first hour and only show labels for every 3rd hour
                 if (index === 0 || hourNum % 3 !== 0) return null;
-                
+
                 const temp = hour.temperature ?? 0;
                 const xPercent = (index / (forecast.length - 1)) * 100;
-                
+
                 // Calculate exact Y position using shared utility
                 const lineY = getTempY(temp);
-                
+
                 return (
                   <div
                     key={index}
@@ -265,7 +265,7 @@ export function HourlyChart({
             })()}
           </div>
         </div>
-        
+
         {/* Hour timeline below canvas */}
         <div className="hourly-timeline">
           {forecast.map((hour, index) => {
@@ -274,7 +274,7 @@ export function HourlyChart({
             const hourNum = date.getHours();
             const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
             const xPercent = (index / (forecast.length - 1)) * 100;
-            
+
             // Every 3rd hour shows number, others show tick mark
             if (hourNum % 3 === 0) {
               return (

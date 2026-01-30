@@ -422,7 +422,7 @@ export function drawStars(
       
       // Deterministic brightness/opacity
       const opacity = 0.4 + rng() * 0.6;
-      ctx.globalAlpha = opacity;
+      ctx.globalAlpha = opacity - 0.5 + (clearness * 0.5);
       
       ctx.beginPath();
       ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);

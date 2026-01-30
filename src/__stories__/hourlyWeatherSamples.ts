@@ -1,530 +1,529 @@
 // ============================================================================
 // Hourly Weather Sample Data
-// Comprehensive weather scenarios for testing and development
+// 10 realistic hand-crafted day patterns with temperature variations
 // ============================================================================
 
 import type { WeatherForecast } from '../WeatherCard/WeatherContext';
 
 // ============================================================================
-// Helper Function
+// Types
 // ============================================================================
 
-interface GenerateForecastOptions {
-  startDate: Date;
-  hours: number;
-  conditions: string[];
-  tempRange: [number, number];
-  cloudCoverage?: number;
-  precipitation?: number;
-  windSpeed?: number;
-  windBearing?: number;
-  humidity?: number;
-  uvIndex?: number;
+/** Base hourly data without temperature (temperature is applied per-season) */
+interface BaseHourData {
+  condition: string;
+  cloud_coverage: number;
+  precipitation: number;
+  precipitation_probability: number;
+  wind_speed: number;
+  humidity: number;
 }
 
-function generateHourlyForecast(options: GenerateForecastOptions): WeatherForecast[] {
-  const {
-    startDate,
-    hours,
-    conditions,
-    tempRange,
-    cloudCoverage = 50,
-    precipitation = 0,
-    windSpeed = 5,
-    windBearing = 180,
-    humidity = 50,
-    uvIndex = 2,
-  } = options;
-  
-  const forecast: WeatherForecast[] = [];
-  const [minTemp, maxTemp] = tempRange;
-  
-  for (let i = 0; i < hours; i++) {
-    const date = new Date(startDate);
-    date.setHours(date.getHours() + i);
-    
-    // Vary temperature through the day with sine wave
-    const hourOfDay = date.getHours();
-    const tempFactor = Math.sin(((hourOfDay - 6) / 24) * Math.PI);
-    const temp = minTemp + (maxTemp - minTemp) * Math.max(0, tempFactor);
-    
-    forecast.push({
-      datetime: date.toISOString(),
-      condition: conditions[i % conditions.length],
-      temperature: Math.round(temp),
-      cloud_coverage: cloudCoverage,
-      precipitation: precipitation,
-      precipitation_probability: precipitation > 0 ? 80 : 10,
-      wind_speed: windSpeed,
-      wind_bearing: windBearing,
-      humidity: humidity + (precipitation > 0 ? 20 : 0),
-      uv_index: uvIndex,
-    });
-  }
-  
-  return forecast;
+/** Sun times for day/night determination */
+interface SunTimes {
+  sunrise: Date | undefined;
+  sunset: Date | undefined;
+  dawn: Date | undefined;
+  dusk: Date | undefined;
+}
+
+/** Temperature range configuration */
+interface TempConfig {
+  range: [number, number];
+  date: string; // ISO date string for representative date
 }
 
 // ============================================================================
-// Weather Scenarios
+// Temperature Configurations (6 seasons)
 // ============================================================================
 
-// Base date for all scenarios
-const BASE_DATE = new Date('2026-01-24T08:00:00');
-
-// ----------------------------------------------------------------------------
-// 1. SUNNY DAY Scenarios
-// ----------------------------------------------------------------------------
-
-export const sunnySkyHot = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny'],
-  tempRange: [85, 100],
-  cloudCoverage: 5,
-  precipitation: 0,
-  windSpeed: 7,
-  humidity: 40,
-  uvIndex: 9,
-});
-
-export const sunnySkyMild = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny'],
-  tempRange: [55, 75],
-  cloudCoverage: 5,
-  precipitation: 0,
-  windSpeed: 6,
-  humidity: 50,
-  uvIndex: 6,
-});
-
-export const sunnySkyCold = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny'],
-  tempRange: [15, 35],
-  cloudCoverage: 5,
-  precipitation: 0,
-  windSpeed: 8,
-  humidity: 60,
-  uvIndex: 3,
-});
-
-// ----------------------------------------------------------------------------
-// 2. CLOUDY DAY Scenarios
-// ----------------------------------------------------------------------------
-
-export const cloudySkyHot = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['cloudy'],
-  tempRange: [85, 95],
-  cloudCoverage: 90,
-  precipitation: 0,
-  windSpeed: 5,
-  humidity: 55,
-  uvIndex: 4,
-});
-
-export const cloudySkyMild = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['cloudy'],
-  tempRange: [55, 68],
-  cloudCoverage: 95,
-  precipitation: 0,
-  windSpeed: 6,
-  humidity: 65,
-  uvIndex: 2,
-});
-
-export const cloudySkyCold = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['cloudy'],
-  tempRange: [15, 30],
-  cloudCoverage: 100,
-  precipitation: 0,
-  windSpeed: 10,
-  humidity: 75,
-  uvIndex: 1,
-});
-
-// ----------------------------------------------------------------------------
-// 3. RAINY DAY Scenarios
-// ----------------------------------------------------------------------------
-
-export const rainyDayHot = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['rainy'],
-  tempRange: [85, 92],
-  cloudCoverage: 100,
-  precipitation: 0.8,
-  windSpeed: 12,
-  humidity: 80,
-  uvIndex: 2,
-});
-
-export const rainyDayMild = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['rainy'],
-  tempRange: [55, 65],
-  cloudCoverage: 100,
-  precipitation: 1.2,
-  windSpeed: 14,
-  humidity: 85,
-  uvIndex: 1,
-});
-
-export const rainyDayCold = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['rainy'],
-  tempRange: [35, 42],
-  cloudCoverage: 100,
-  precipitation: 0.6,
-  windSpeed: 15,
-  humidity: 90,
-  uvIndex: 0,
-});
-
-// ----------------------------------------------------------------------------
-// 4. SNOWY DAY Scenarios
-// ----------------------------------------------------------------------------
-
-export const snowyDayHot = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['snowy'],
-  tempRange: [85, 95], // Unrealistic but following requirements
-  cloudCoverage: 100,
-  precipitation: 0.3,
-  windSpeed: 8,
-  humidity: 70,
-  uvIndex: 2,
-});
-
-export const snowyDayMild = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['snowy'],
-  tempRange: [55, 65], // Unrealistic but following requirements
-  cloudCoverage: 100,
-  precipitation: 0.5,
-  windSpeed: 10,
-  humidity: 75,
-  uvIndex: 1,
-});
-
-export const snowyDayCold = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['snowy'],
-  tempRange: [15, 28],
-  cloudCoverage: 100,
-  precipitation: 0.8,
-  windSpeed: 12,
-  humidity: 85,
-  uvIndex: 0,
-});
-
-// ----------------------------------------------------------------------------
-// 5. MIXED (Sun, Clouds, Rain) Scenarios
-// ----------------------------------------------------------------------------
-
-export const mixedRainHot = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny', 'sunny', 'partlycloudy', 'partlycloudy', 'cloudy', 'cloudy', 'rainy', 'rainy', 'cloudy', 'partlycloudy', 'partlycloudy', 'sunny'],
-  tempRange: [85, 98],
-  cloudCoverage: 60,
-  precipitation: 0.4,
-  windSpeed: 10,
-  humidity: 60,
-  uvIndex: 5,
-});
-
-export const mixedRainMild = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny', 'sunny', 'partlycloudy', 'partlycloudy', 'cloudy', 'cloudy', 'rainy', 'rainy', 'cloudy', 'partlycloudy', 'partlycloudy', 'sunny'],
-  tempRange: [55, 72],
-  cloudCoverage: 55,
-  precipitation: 0.5,
-  windSpeed: 12,
-  humidity: 65,
-  uvIndex: 4,
-});
-
-export const mixedRainCold = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny', 'sunny', 'partlycloudy', 'partlycloudy', 'cloudy', 'cloudy', 'rainy', 'rainy', 'cloudy', 'partlycloudy', 'partlycloudy', 'sunny'],
-  tempRange: [15, 38],
-  cloudCoverage: 65,
-  precipitation: 0.3,
-  windSpeed: 14,
-  humidity: 70,
-  uvIndex: 2,
-});
-
-// ----------------------------------------------------------------------------
-// 6. MIXED (Sun, Clouds, Snow) Scenarios
-// ----------------------------------------------------------------------------
-
-export const mixedSnowHot = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny', 'sunny', 'partlycloudy', 'partlycloudy', 'cloudy', 'cloudy', 'snowy', 'snowy', 'cloudy', 'partlycloudy', 'partlycloudy', 'sunny'],
-  tempRange: [85, 95], // Unrealistic but following requirements
-  cloudCoverage: 55,
-  precipitation: 0.2,
-  windSpeed: 9,
-  humidity: 55,
-  uvIndex: 4,
-});
-
-export const mixedSnowMild = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny', 'sunny', 'partlycloudy', 'partlycloudy', 'cloudy', 'cloudy', 'snowy', 'snowy', 'cloudy', 'partlycloudy', 'partlycloudy', 'sunny'],
-  tempRange: [55, 68], // Unrealistic but following requirements
-  cloudCoverage: 60,
-  precipitation: 0.3,
-  windSpeed: 11,
-  humidity: 60,
-  uvIndex: 3,
-});
-
-export const mixedSnowCold = generateHourlyForecast({
-  startDate: new Date(BASE_DATE),
-  hours: 12,
-  conditions: ['sunny', 'sunny', 'partlycloudy', 'partlycloudy', 'cloudy', 'cloudy', 'snowy', 'snowy', 'cloudy', 'partlycloudy', 'partlycloudy', 'sunny'],
-  tempRange: [15, 32],
-  cloudCoverage: 70,
-  precipitation: 0.6,
-  windSpeed: 13,
-  humidity: 75,
-  uvIndex: 1,
-});
-
-// ----------------------------------------------------------------------------
-// 7. SUNSET Scenarios
-// ----------------------------------------------------------------------------
-
-export const sunsetHot = (() => {
-  const startHour = new Date(BASE_DATE);
-  startHour.setHours(14); // Start at 2pm
-  const forecast: WeatherForecast[] = [];
-  
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(startHour);
-    date.setHours(date.getHours() + i);
-    const hour = date.getHours();
-    
-    // Transition from day to night around hour 18-20 (6-8pm)
-    let condition = 'sunny';
-    if (hour >= 18 && hour < 20) condition = 'partlycloudy';
-    if (hour >= 20 || hour < 6) condition = 'clear-night';
-    
-    const temp = hour < 20 ? 95 - (hour - 14) * 2 : 80;
-    
-    forecast.push({
-      datetime: date.toISOString(),
-      condition,
-      temperature: Math.round(temp),
-      cloud_coverage: hour >= 18 ? 25 : 10,
-      precipitation: 0,
-      wind_speed: 6,
-      wind_bearing: 270,
-      humidity: 45,
-      uv_index: hour < 18 ? 5 : 0,
-    });
-  }
-  
-  return forecast;
-})();
-
-export const sunsetMild = (() => {
-  const startHour = new Date(BASE_DATE);
-  startHour.setHours(14);
-  const forecast: WeatherForecast[] = [];
-  
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(startHour);
-    date.setHours(date.getHours() + i);
-    const hour = date.getHours();
-    
-    let condition = 'sunny';
-    if (hour >= 18 && hour < 20) condition = 'partlycloudy';
-    if (hour >= 20 || hour < 6) condition = 'clear-night';
-    
-    const temp = hour < 20 ? 70 - (hour - 14) * 2 : 58;
-    
-    forecast.push({
-      datetime: date.toISOString(),
-      condition,
-      temperature: Math.round(temp),
-      cloud_coverage: hour >= 18 ? 30 : 10,
-      precipitation: 0,
-      wind_speed: 7,
-      wind_bearing: 270,
-      humidity: 55,
-      uv_index: hour < 18 ? 4 : 0,
-    });
-  }
-  
-  return forecast;
-})();
-
-export const sunsetCold = (() => {
-  const startHour = new Date(BASE_DATE);
-  startHour.setHours(14);
-  const forecast: WeatherForecast[] = [];
-  
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(startHour);
-    date.setHours(date.getHours() + i);
-    const hour = date.getHours();
-    
-    let condition = 'sunny';
-    if (hour >= 18 && hour < 20) condition = 'partlycloudy';
-    if (hour >= 20 || hour < 6) condition = 'clear-night';
-    
-    const temp = hour < 20 ? 32 - (hour - 14) * 1.5 : 20;
-    
-    forecast.push({
-      datetime: date.toISOString(),
-      condition,
-      temperature: Math.round(temp),
-      cloud_coverage: hour >= 18 ? 20 : 5,
-      precipitation: 0,
-      wind_speed: 8,
-      wind_bearing: 270,
-      humidity: 60,
-      uv_index: hour < 18 ? 2 : 0,
-    });
-  }
-  
-  return forecast;
-})();
-
-// ----------------------------------------------------------------------------
-// 8. SUNRISE Scenarios
-// ----------------------------------------------------------------------------
-
-export const sunriseHot = (() => {
-  const startHour = new Date(BASE_DATE);
-  startHour.setHours(2); // Start at 2am
-  const forecast: WeatherForecast[] = [];
-  
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(startHour);
-    date.setHours(date.getHours() + i);
-    const hour = date.getHours();
-    
-    // Transition from night to day around hour 6-8
-    let condition = 'clear-night';
-    if (hour >= 6 && hour < 8) condition = 'partlycloudy';
-    if (hour >= 8) condition = 'sunny';
-    
-    const temp = hour < 6 ? 75 : 75 + (hour - 6) * 3;
-    
-    forecast.push({
-      datetime: date.toISOString(),
-      condition,
-      temperature: Math.round(temp),
-      cloud_coverage: hour >= 6 && hour < 8 ? 25 : 5,
-      precipitation: 0,
-      wind_speed: 5,
-      wind_bearing: 90,
-      humidity: 50,
-      uv_index: hour < 6 ? 0 : (hour - 6) * 1.5,
-    });
-  }
-  
-  return forecast;
-})();
-
-export const sunriseMild = (() => {
-  const startHour = new Date(BASE_DATE);
-  startHour.setHours(2);
-  const forecast: WeatherForecast[] = [];
-  
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(startHour);
-    date.setHours(date.getHours() + i);
-    const hour = date.getHours();
-    
-    let condition = 'clear-night';
-    if (hour >= 6 && hour < 8) condition = 'partlycloudy';
-    if (hour >= 8) condition = 'sunny';
-    
-    const temp = hour < 6 ? 50 : 50 + (hour - 6) * 3;
-    
-    forecast.push({
-      datetime: date.toISOString(),
-      condition,
-      temperature: Math.round(temp),
-      cloud_coverage: hour >= 6 && hour < 8 ? 30 : 10,
-      precipitation: 0,
-      wind_speed: 6,
-      wind_bearing: 90,
-      humidity: 60,
-      uv_index: hour < 6 ? 0 : (hour - 6) * 1.2,
-    });
-  }
-  
-  return forecast;
-})();
-
-export const sunriseCold = (() => {
-  const startHour = new Date(BASE_DATE);
-  startHour.setHours(2);
-  const forecast: WeatherForecast[] = [];
-  
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(startHour);
-    date.setHours(date.getHours() + i);
-    const hour = date.getHours();
-    
-    let condition = 'clear-night';
-    if (hour >= 6 && hour < 8) condition = 'partlycloudy';
-    if (hour >= 8) condition = 'sunny';
-    
-    const temp = hour < 6 ? 10 : 10 + (hour - 6) * 3;
-    
-    forecast.push({
-      datetime: date.toISOString(),
-      condition,
-      temperature: Math.round(temp),
-      cloud_coverage: hour >= 6 && hour < 8 ? 20 : 5,
-      precipitation: 0,
-      wind_speed: 7,
-      wind_bearing: 90,
-      humidity: 65,
-      uv_index: hour < 6 ? 0 : (hour - 6) * 0.8,
-    });
-  }
-  
-  return forecast;
-})();
-
-// ============================================================================
-// Organized Export
-// ============================================================================
-
-export const allScenarios = {
-  sunny: { hot: sunnySkyHot, mild: sunnySkyMild, cold: sunnySkyCold },
-  cloudy: { hot: cloudySkyHot, mild: cloudySkyMild, cold: cloudySkyCold },
-  rainy: { hot: rainyDayHot, mild: rainyDayMild, cold: rainyDayCold },
-  snowy: { hot: snowyDayHot, mild: snowyDayMild, cold: snowyDayCold },
-  mixedRain: { hot: mixedRainHot, mild: mixedRainMild, cold: mixedRainCold },
-  mixedSnow: { hot: mixedSnowHot, mild: mixedSnowMild, cold: mixedSnowCold },
-  sunset: { hot: sunsetHot, mild: sunsetMild, cold: sunsetCold },
-  sunrise: { hot: sunriseHot, mild: sunriseMild, cold: sunriseCold },
+const TEMP_CONFIGS: Record<string, TempConfig> = {
+  winter: { range: [25, 38], date: '2026-01-15' },
+  earlySpring: { range: [40, 55], date: '2026-03-20' },
+  lateSpring: { range: [55, 70], date: '2026-05-10' },
+  summer: { range: [75, 90], date: '2026-07-15' },
+  earlyFall: { range: [60, 75], date: '2026-09-25' },
+  lateFall: { range: [38, 50], date: '2026-11-10' },
 };
+
+// ============================================================================
+// Helper: Apply Temperature Range to Base Pattern
+// ============================================================================
+
+/**
+ * Applies a realistic diurnal temperature curve to a base 24-hour pattern.
+ * Temperature minimum around 5-6am, maximum around 2-4pm.
+ */
+function applyTemperatureRange(
+  basePattern: BaseHourData[],
+  tempRange: [number, number],
+  dateString: string
+): WeatherForecast[] {
+  const [minTemp, maxTemp] = tempRange;
+  const baseDate = new Date(dateString + 'T00:00:00');
+
+  return basePattern.map((hour, index) => {
+    // Diurnal temperature curve: min at 5am, max at 3pm
+    // Using sine wave: sin((hour - 5) / 24 * 2π) shifted and scaled
+    const normalizedHour = (index - 5) / 24;
+    const tempFactor = Math.sin(normalizedHour * 2 * Math.PI);
+    const normalizedFactor = (tempFactor + 1) / 2; // 0 to 1
+    const temperature = Math.round(minTemp + (maxTemp - minTemp) * normalizedFactor);
+
+    const datetime = new Date(baseDate);
+    datetime.setHours(index);
+
+    // UV index is 0 at night (before 6am or after 7pm)
+    const isNight = index < 6 || index >= 19;
+    const uv_index = isNight ? 0 : Math.min(10, Math.round((1 - hour.cloud_coverage / 100) * 8));
+
+    return {
+      datetime: datetime.toISOString(),
+      condition: hour.condition,
+      temperature,
+      cloud_coverage: hour.cloud_coverage,
+      precipitation: hour.precipitation,
+      precipitation_probability: hour.precipitation_probability,
+      wind_speed: hour.wind_speed,
+      wind_bearing: 180,
+      humidity: hour.humidity,
+      uv_index,
+    };
+  });
+}
+
+/**
+ * Creates all 6 temperature variations for a base pattern.
+ */
+function createAllVariations(basePattern: BaseHourData[]): Record<string, WeatherForecast[]> {
+  return {
+    winter: applyTemperatureRange(basePattern, TEMP_CONFIGS.winter.range, TEMP_CONFIGS.winter.date),
+    earlySpring: applyTemperatureRange(basePattern, TEMP_CONFIGS.earlySpring.range, TEMP_CONFIGS.earlySpring.date),
+    lateSpring: applyTemperatureRange(basePattern, TEMP_CONFIGS.lateSpring.range, TEMP_CONFIGS.lateSpring.date),
+    summer: applyTemperatureRange(basePattern, TEMP_CONFIGS.summer.range, TEMP_CONFIGS.summer.date),
+    earlyFall: applyTemperatureRange(basePattern, TEMP_CONFIGS.earlyFall.range, TEMP_CONFIGS.earlyFall.date),
+    lateFall: applyTemperatureRange(basePattern, TEMP_CONFIGS.lateFall.range, TEMP_CONFIGS.lateFall.date),
+  };
+}
+
+// ============================================================================
+// Pattern 1: Building Storm Day
+// Clear start → clouds building → 2 hours rain → clouds stay → wind clears
+// ============================================================================
+
+const buildingStormBase: BaseHourData[] = [
+  // Hours 0-6: Clear/partly cloudy night and early morning
+  { condition: 'clear-night', cloud_coverage: 10, precipitation: 0, precipitation_probability: 5, wind_speed: 5, humidity: 60 },
+  { condition: 'clear-night', cloud_coverage: 15, precipitation: 0, precipitation_probability: 5, wind_speed: 5, humidity: 62 },
+  { condition: 'clear-night', cloud_coverage: 15, precipitation: 0, precipitation_probability: 5, wind_speed: 5, humidity: 65 },
+  { condition: 'clear-night', cloud_coverage: 20, precipitation: 0, precipitation_probability: 10, wind_speed: 5, humidity: 65 },
+  { condition: 'clear-night', cloud_coverage: 25, precipitation: 0, precipitation_probability: 10, wind_speed: 6, humidity: 68 },
+  { condition: 'clear-night', cloud_coverage: 30, precipitation: 0, precipitation_probability: 15, wind_speed: 6, humidity: 70 },
+  { condition: 'partlycloudy', cloud_coverage: 35, precipitation: 0, precipitation_probability: 15, wind_speed: 7, humidity: 70 },
+  // Hours 7-11: Clouds building
+  { condition: 'partlycloudy', cloud_coverage: 45, precipitation: 0, precipitation_probability: 20, wind_speed: 8, humidity: 72 },
+  { condition: 'partlycloudy', cloud_coverage: 55, precipitation: 0, precipitation_probability: 30, wind_speed: 8, humidity: 75 },
+  { condition: 'cloudy', cloud_coverage: 70, precipitation: 0, precipitation_probability: 45, wind_speed: 10, humidity: 78 },
+  { condition: 'cloudy', cloud_coverage: 85, precipitation: 0, precipitation_probability: 60, wind_speed: 12, humidity: 80 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 75, wind_speed: 14, humidity: 82 },
+  // Hours 12-13: Rain (2 hours)
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.3, precipitation_probability: 90, wind_speed: 15, humidity: 88 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.5, precipitation_probability: 95, wind_speed: 16, humidity: 90 },
+  // Hours 14-17: Post-rain cloudy, wind picking up
+  { condition: 'cloudy', cloud_coverage: 100, precipitation: 0.05, precipitation_probability: 40, wind_speed: 18, humidity: 85 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 25, wind_speed: 20, humidity: 80 },
+  { condition: 'cloudy', cloud_coverage: 90, precipitation: 0, precipitation_probability: 15, wind_speed: 22, humidity: 75 },
+  { condition: 'windy', cloud_coverage: 85, precipitation: 0, precipitation_probability: 10, wind_speed: 25, humidity: 70 },
+  // Hours 18-23: Windy, clouds fading
+  { condition: 'windy', cloud_coverage: 70, precipitation: 0, precipitation_probability: 5, wind_speed: 22, humidity: 65 },
+  { condition: 'windy-variant', cloud_coverage: 55, precipitation: 0, precipitation_probability: 5, wind_speed: 20, humidity: 60 },
+  { condition: 'partlycloudy', cloud_coverage: 40, precipitation: 0, precipitation_probability: 5, wind_speed: 15, humidity: 58 },
+  { condition: 'partlycloudy', cloud_coverage: 30, precipitation: 0, precipitation_probability: 5, wind_speed: 12, humidity: 55 },
+  { condition: 'clear-night', cloud_coverage: 25, precipitation: 0, precipitation_probability: 5, wind_speed: 10, humidity: 55 },
+  { condition: 'clear-night', cloud_coverage: 20, precipitation: 0, precipitation_probability: 5, wind_speed: 8, humidity: 55 },
+];
+
+// ============================================================================
+// Pattern 2: Fog and Thunderstorm Day
+// Clear night → fog at dawn → clears by 11 → afternoon thunderstorm
+// ============================================================================
+
+const fogAndThunderstormBase: BaseHourData[] = [
+  // Hours 0-4: Clear night
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 70 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 72 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 75 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 80 },
+  { condition: 'clear-night', cloud_coverage: 10, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 85 },
+  // Hours 5-10: Fog rolls in at dawn
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 95 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 98 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 95 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 92 },
+  { condition: 'fog', cloud_coverage: 90, precipitation: 0, precipitation_probability: 0, wind_speed: 4, humidity: 88 },
+  { condition: 'partlycloudy', cloud_coverage: 60, precipitation: 0, precipitation_probability: 5, wind_speed: 5, humidity: 75 },
+  // Hours 11-14: Clear/sunny
+  { condition: 'sunny', cloud_coverage: 30, precipitation: 0, precipitation_probability: 10, wind_speed: 6, humidity: 65 },
+  { condition: 'sunny', cloud_coverage: 20, precipitation: 0, precipitation_probability: 15, wind_speed: 7, humidity: 60 },
+  { condition: 'sunny', cloud_coverage: 25, precipitation: 0, precipitation_probability: 25, wind_speed: 8, humidity: 58 },
+  { condition: 'partlycloudy', cloud_coverage: 40, precipitation: 0, precipitation_probability: 40, wind_speed: 10, humidity: 60 },
+  // Hours 15-17: Afternoon thunderstorm
+  { condition: 'cloudy', cloud_coverage: 80, precipitation: 0, precipitation_probability: 70, wind_speed: 15, humidity: 70 },
+  { condition: 'lightning-rainy', cloud_coverage: 100, precipitation: 0.8, precipitation_probability: 90, wind_speed: 22, humidity: 85 },
+  { condition: 'lightning-rainy', cloud_coverage: 100, precipitation: 1.2, precipitation_probability: 95, wind_speed: 25, humidity: 88 },
+  // Hours 18-23: Clearing, partly cloudy
+  { condition: 'rainy', cloud_coverage: 90, precipitation: 0.3, precipitation_probability: 60, wind_speed: 18, humidity: 80 },
+  { condition: 'cloudy', cloud_coverage: 70, precipitation: 0, precipitation_probability: 30, wind_speed: 12, humidity: 72 },
+  { condition: 'partlycloudy', cloud_coverage: 50, precipitation: 0, precipitation_probability: 15, wind_speed: 8, humidity: 68 },
+  { condition: 'partlycloudy', cloud_coverage: 35, precipitation: 0, precipitation_probability: 10, wind_speed: 6, humidity: 65 },
+  { condition: 'clear-night', cloud_coverage: 25, precipitation: 0, precipitation_probability: 5, wind_speed: 5, humidity: 62 },
+  { condition: 'clear-night', cloud_coverage: 20, precipitation: 0, precipitation_probability: 5, wind_speed: 4, humidity: 60 },
+];
+
+// ============================================================================
+// Pattern 3: Rainy Morning, Variable Afternoon
+// Cloudy night → morning rain → clearing → clouds return
+// ============================================================================
+
+const rainyMorningBase: BaseHourData[] = [
+  // Hours 0-5: Cloudy night
+  { condition: 'cloudy', cloud_coverage: 85, precipitation: 0, precipitation_probability: 40, wind_speed: 8, humidity: 75 },
+  { condition: 'cloudy', cloud_coverage: 88, precipitation: 0, precipitation_probability: 50, wind_speed: 8, humidity: 78 },
+  { condition: 'cloudy', cloud_coverage: 90, precipitation: 0, precipitation_probability: 55, wind_speed: 9, humidity: 80 },
+  { condition: 'cloudy', cloud_coverage: 92, precipitation: 0, precipitation_probability: 65, wind_speed: 10, humidity: 82 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 75, wind_speed: 10, humidity: 85 },
+  { condition: 'cloudy', cloud_coverage: 98, precipitation: 0.05, precipitation_probability: 80, wind_speed: 11, humidity: 87 },
+  // Hours 6-9: Morning rain
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.3, precipitation_probability: 90, wind_speed: 12, humidity: 90 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.5, precipitation_probability: 95, wind_speed: 14, humidity: 92 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.4, precipitation_probability: 90, wind_speed: 12, humidity: 90 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.2, precipitation_probability: 75, wind_speed: 10, humidity: 85 },
+  // Hours 10-13: Clearing up, sunny
+  { condition: 'cloudy', cloud_coverage: 80, precipitation: 0, precipitation_probability: 40, wind_speed: 8, humidity: 75 },
+  { condition: 'partlycloudy', cloud_coverage: 50, precipitation: 0, precipitation_probability: 20, wind_speed: 7, humidity: 65 },
+  { condition: 'sunny', cloud_coverage: 25, precipitation: 0, precipitation_probability: 10, wind_speed: 6, humidity: 55 },
+  { condition: 'sunny', cloud_coverage: 20, precipitation: 0, precipitation_probability: 10, wind_speed: 6, humidity: 50 },
+  // Hours 14-19: Clouds return
+  { condition: 'partlycloudy', cloud_coverage: 35, precipitation: 0, precipitation_probability: 15, wind_speed: 7, humidity: 52 },
+  { condition: 'partlycloudy', cloud_coverage: 50, precipitation: 0, precipitation_probability: 20, wind_speed: 8, humidity: 55 },
+  { condition: 'cloudy', cloud_coverage: 60, precipitation: 0, precipitation_probability: 25, wind_speed: 8, humidity: 58 },
+  { condition: 'cloudy', cloud_coverage: 65, precipitation: 0, precipitation_probability: 25, wind_speed: 7, humidity: 60 },
+  { condition: 'cloudy', cloud_coverage: 70, precipitation: 0, precipitation_probability: 20, wind_speed: 6, humidity: 62 },
+  { condition: 'cloudy', cloud_coverage: 70, precipitation: 0, precipitation_probability: 15, wind_speed: 6, humidity: 65 },
+  // Hours 20-23: Cloudy night
+  { condition: 'cloudy', cloud_coverage: 75, precipitation: 0, precipitation_probability: 15, wind_speed: 5, humidity: 68 },
+  { condition: 'cloudy', cloud_coverage: 78, precipitation: 0, precipitation_probability: 15, wind_speed: 5, humidity: 70 },
+  { condition: 'cloudy', cloud_coverage: 80, precipitation: 0, precipitation_probability: 20, wind_speed: 5, humidity: 72 },
+  { condition: 'cloudy', cloud_coverage: 82, precipitation: 0, precipitation_probability: 25, wind_speed: 5, humidity: 74 },
+];
+
+// ============================================================================
+// Pattern 4: Drizzle and Thunderstorms
+// Light drizzle all morning → afternoon thunderstorms → drizzle continues
+// ============================================================================
+
+const drizzleAndThunderstormsBase: BaseHourData[] = [
+  // Hours 0-5: Light drizzle
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 70, wind_speed: 6, humidity: 88 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 70, wind_speed: 6, humidity: 88 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 65, wind_speed: 5, humidity: 87 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 65, wind_speed: 5, humidity: 86 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 70, wind_speed: 6, humidity: 87 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 75, wind_speed: 7, humidity: 88 },
+  // Hours 6-11: Continued drizzle
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 75, wind_speed: 8, humidity: 88 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.2, precipitation_probability: 80, wind_speed: 8, humidity: 89 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.2, precipitation_probability: 80, wind_speed: 9, humidity: 90 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 75, wind_speed: 10, humidity: 88 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 80, wind_speed: 12, humidity: 87 },
+  { condition: 'cloudy', cloud_coverage: 100, precipitation: 0.05, precipitation_probability: 70, wind_speed: 14, humidity: 85 },
+  // Hours 12-16: Afternoon thunderstorms
+  { condition: 'lightning', cloud_coverage: 100, precipitation: 0, precipitation_probability: 80, wind_speed: 18, humidity: 82 },
+  { condition: 'lightning-rainy', cloud_coverage: 100, precipitation: 0.8, precipitation_probability: 95, wind_speed: 22, humidity: 88 },
+  { condition: 'lightning-rainy', cloud_coverage: 100, precipitation: 1.5, precipitation_probability: 100, wind_speed: 28, humidity: 92 },
+  { condition: 'lightning-rainy', cloud_coverage: 100, precipitation: 1.0, precipitation_probability: 95, wind_speed: 25, humidity: 90 },
+  { condition: 'pouring', cloud_coverage: 100, precipitation: 0.6, precipitation_probability: 90, wind_speed: 20, humidity: 88 },
+  // Hours 17-23: Back to drizzle
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.3, precipitation_probability: 85, wind_speed: 15, humidity: 86 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.2, precipitation_probability: 80, wind_speed: 12, humidity: 85 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 75, wind_speed: 10, humidity: 85 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 70, wind_speed: 8, humidity: 86 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 70, wind_speed: 7, humidity: 86 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 65, wind_speed: 6, humidity: 87 },
+  { condition: 'rainy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 65, wind_speed: 6, humidity: 88 },
+];
+
+// ============================================================================
+// Pattern 5: Perfect Clear Day
+// Clear all day with minimal clouds
+// ============================================================================
+
+const perfectClearBase: BaseHourData[] = [
+  // Hours 0-5: Clear night
+  { condition: 'clear-night', cloud_coverage: 0, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 55 },
+  { condition: 'clear-night', cloud_coverage: 0, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 58 },
+  { condition: 'clear-night', cloud_coverage: 2, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 60 },
+  { condition: 'clear-night', cloud_coverage: 3, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 62 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 2, humidity: 60 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 58 },
+  // Hours 6-11: Sunny morning
+  { condition: 'sunny', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 4, humidity: 55 },
+  { condition: 'sunny', cloud_coverage: 8, precipitation: 0, precipitation_probability: 0, wind_speed: 5, humidity: 50 },
+  { condition: 'sunny', cloud_coverage: 8, precipitation: 0, precipitation_probability: 0, wind_speed: 5, humidity: 48 },
+  { condition: 'sunny', cloud_coverage: 10, precipitation: 0, precipitation_probability: 0, wind_speed: 6, humidity: 45 },
+  { condition: 'sunny', cloud_coverage: 10, precipitation: 0, precipitation_probability: 0, wind_speed: 6, humidity: 42 },
+  { condition: 'sunny', cloud_coverage: 12, precipitation: 0, precipitation_probability: 0, wind_speed: 7, humidity: 40 },
+  // Hours 12-17: Sunny afternoon with a few puffy clouds
+  { condition: 'sunny', cloud_coverage: 15, precipitation: 0, precipitation_probability: 0, wind_speed: 7, humidity: 38 },
+  { condition: 'sunny', cloud_coverage: 15, precipitation: 0, precipitation_probability: 0, wind_speed: 7, humidity: 38 },
+  { condition: 'sunny', cloud_coverage: 12, precipitation: 0, precipitation_probability: 0, wind_speed: 6, humidity: 40 },
+  { condition: 'sunny', cloud_coverage: 10, precipitation: 0, precipitation_probability: 0, wind_speed: 6, humidity: 42 },
+  { condition: 'sunny', cloud_coverage: 8, precipitation: 0, precipitation_probability: 0, wind_speed: 5, humidity: 45 },
+  { condition: 'sunny', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 5, humidity: 48 },
+  // Hours 18-23: Clear evening/night
+  { condition: 'partlycloudy', cloud_coverage: 10, precipitation: 0, precipitation_probability: 0, wind_speed: 4, humidity: 50 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 4, humidity: 52 },
+  { condition: 'clear-night', cloud_coverage: 3, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 54 },
+  { condition: 'clear-night', cloud_coverage: 2, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 55 },
+  { condition: 'clear-night', cloud_coverage: 0, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 55 },
+  { condition: 'clear-night', cloud_coverage: 0, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 55 },
+];
+
+// ============================================================================
+// Pattern 6: Winter Snow Day
+// Snow throughout with varying intensity
+// ============================================================================
+
+const winterSnowBase: BaseHourData[] = [
+  // Hours 0-5: Light snow overnight
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 80, wind_speed: 8, humidity: 85 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 80, wind_speed: 8, humidity: 85 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 85, wind_speed: 10, humidity: 86 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 85, wind_speed: 10, humidity: 87 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.2, precipitation_probability: 88, wind_speed: 12, humidity: 88 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.25, precipitation_probability: 90, wind_speed: 12, humidity: 88 },
+  // Hours 6-11: Heavier morning snow
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.3, precipitation_probability: 95, wind_speed: 14, humidity: 90 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.4, precipitation_probability: 95, wind_speed: 15, humidity: 90 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.5, precipitation_probability: 98, wind_speed: 16, humidity: 92 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.5, precipitation_probability: 98, wind_speed: 16, humidity: 92 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.4, precipitation_probability: 95, wind_speed: 15, humidity: 90 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.35, precipitation_probability: 92, wind_speed: 14, humidity: 88 },
+  // Hours 12-17: Tapering snow
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.25, precipitation_probability: 88, wind_speed: 12, humidity: 86 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.2, precipitation_probability: 85, wind_speed: 12, humidity: 85 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 80, wind_speed: 10, humidity: 84 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 78, wind_speed: 10, humidity: 83 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 75, wind_speed: 8, humidity: 82 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 72, wind_speed: 8, humidity: 82 },
+  // Hours 18-23: Flurries/light snow
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.08, precipitation_probability: 65, wind_speed: 7, humidity: 82 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.05, precipitation_probability: 60, wind_speed: 6, humidity: 82 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.05, precipitation_probability: 55, wind_speed: 6, humidity: 83 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.05, precipitation_probability: 50, wind_speed: 5, humidity: 84 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.08, precipitation_probability: 55, wind_speed: 6, humidity: 84 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.1, precipitation_probability: 60, wind_speed: 7, humidity: 85 },
+];
+
+// ============================================================================
+// Pattern 7: Cold Front Passage
+// Warm humid morning → storms as front passes → rapid clearing and cooling
+// ============================================================================
+
+const coldFrontBase: BaseHourData[] = [
+  // Hours 0-6: Warm, humid, partly cloudy
+  { condition: 'partlycloudy', cloud_coverage: 30, precipitation: 0, precipitation_probability: 10, wind_speed: 8, humidity: 72 },
+  { condition: 'partlycloudy', cloud_coverage: 32, precipitation: 0, precipitation_probability: 10, wind_speed: 8, humidity: 74 },
+  { condition: 'partlycloudy', cloud_coverage: 35, precipitation: 0, precipitation_probability: 12, wind_speed: 9, humidity: 75 },
+  { condition: 'partlycloudy', cloud_coverage: 38, precipitation: 0, precipitation_probability: 15, wind_speed: 10, humidity: 76 },
+  { condition: 'partlycloudy', cloud_coverage: 40, precipitation: 0, precipitation_probability: 18, wind_speed: 10, humidity: 78 },
+  { condition: 'partlycloudy', cloud_coverage: 42, precipitation: 0, precipitation_probability: 20, wind_speed: 11, humidity: 78 },
+  { condition: 'partlycloudy', cloud_coverage: 45, precipitation: 0, precipitation_probability: 25, wind_speed: 12, humidity: 80 },
+  // Hours 7-11: Clouds building rapidly
+  { condition: 'cloudy', cloud_coverage: 55, precipitation: 0, precipitation_probability: 35, wind_speed: 14, humidity: 80 },
+  { condition: 'cloudy', cloud_coverage: 70, precipitation: 0, precipitation_probability: 50, wind_speed: 16, humidity: 82 },
+  { condition: 'cloudy', cloud_coverage: 82, precipitation: 0, precipitation_probability: 65, wind_speed: 18, humidity: 84 },
+  { condition: 'cloudy', cloud_coverage: 90, precipitation: 0, precipitation_probability: 75, wind_speed: 20, humidity: 85 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0.05, precipitation_probability: 85, wind_speed: 22, humidity: 86 },
+  // Hours 12-14: Storms as front passes
+  { condition: 'lightning-rainy', cloud_coverage: 100, precipitation: 0.8, precipitation_probability: 95, wind_speed: 28, humidity: 90 },
+  { condition: 'lightning-rainy', cloud_coverage: 100, precipitation: 1.2, precipitation_probability: 98, wind_speed: 32, humidity: 92 },
+  { condition: 'pouring', cloud_coverage: 100, precipitation: 0.6, precipitation_probability: 90, wind_speed: 28, humidity: 88 },
+  // Hours 15-17: Rapid clearing, windy
+  { condition: 'windy-variant', cloud_coverage: 75, precipitation: 0.1, precipitation_probability: 50, wind_speed: 30, humidity: 70 },
+  { condition: 'windy', cloud_coverage: 50, precipitation: 0, precipitation_probability: 20, wind_speed: 28, humidity: 55 },
+  { condition: 'windy', cloud_coverage: 30, precipitation: 0, precipitation_probability: 10, wind_speed: 25, humidity: 45 },
+  // Hours 18-23: Clear and cool, light wind
+  { condition: 'partlycloudy', cloud_coverage: 20, precipitation: 0, precipitation_probability: 5, wind_speed: 18, humidity: 42 },
+  { condition: 'clear-night', cloud_coverage: 15, precipitation: 0, precipitation_probability: 5, wind_speed: 14, humidity: 40 },
+  { condition: 'clear-night', cloud_coverage: 12, precipitation: 0, precipitation_probability: 5, wind_speed: 12, humidity: 40 },
+  { condition: 'clear-night', cloud_coverage: 10, precipitation: 0, precipitation_probability: 5, wind_speed: 10, humidity: 42 },
+  { condition: 'clear-night', cloud_coverage: 8, precipitation: 0, precipitation_probability: 5, wind_speed: 8, humidity: 44 },
+  { condition: 'clear-night', cloud_coverage: 8, precipitation: 0, precipitation_probability: 5, wind_speed: 7, humidity: 45 },
+];
+
+// ============================================================================
+// Pattern 8: Coastal Marine Layer
+// Fog/overcast morning → burns off → sunny afternoon → fog returns at dusk
+// ============================================================================
+
+const marineLayerBase: BaseHourData[] = [
+  // Hours 0-5: Fog/overcast
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 5, wind_speed: 3, humidity: 95 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 5, wind_speed: 3, humidity: 96 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 5, wind_speed: 2, humidity: 97 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 5, wind_speed: 2, humidity: 98 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 5, wind_speed: 2, humidity: 97 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 5, wind_speed: 3, humidity: 96 },
+  // Hours 6-10: Fog slowly burning off
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 5, wind_speed: 4, humidity: 94 },
+  { condition: 'fog', cloud_coverage: 95, precipitation: 0, precipitation_probability: 5, wind_speed: 5, humidity: 90 },
+  { condition: 'cloudy', cloud_coverage: 85, precipitation: 0, precipitation_probability: 5, wind_speed: 6, humidity: 82 },
+  { condition: 'cloudy', cloud_coverage: 70, precipitation: 0, precipitation_probability: 5, wind_speed: 7, humidity: 72 },
+  { condition: 'partlycloudy', cloud_coverage: 55, precipitation: 0, precipitation_probability: 5, wind_speed: 8, humidity: 65 },
+  // Hours 11-16: Sunny, clear
+  { condition: 'sunny', cloud_coverage: 25, precipitation: 0, precipitation_probability: 0, wind_speed: 10, humidity: 55 },
+  { condition: 'sunny', cloud_coverage: 15, precipitation: 0, precipitation_probability: 0, wind_speed: 12, humidity: 50 },
+  { condition: 'sunny', cloud_coverage: 12, precipitation: 0, precipitation_probability: 0, wind_speed: 12, humidity: 48 },
+  { condition: 'sunny', cloud_coverage: 15, precipitation: 0, precipitation_probability: 0, wind_speed: 11, humidity: 50 },
+  { condition: 'sunny', cloud_coverage: 18, precipitation: 0, precipitation_probability: 0, wind_speed: 10, humidity: 52 },
+  { condition: 'sunny', cloud_coverage: 20, precipitation: 0, precipitation_probability: 0, wind_speed: 9, humidity: 55 },
+  // Hours 17-20: Clouds returning
+  { condition: 'partlycloudy', cloud_coverage: 35, precipitation: 0, precipitation_probability: 5, wind_speed: 7, humidity: 62 },
+  { condition: 'partlycloudy', cloud_coverage: 50, precipitation: 0, precipitation_probability: 5, wind_speed: 6, humidity: 70 },
+  { condition: 'cloudy', cloud_coverage: 65, precipitation: 0, precipitation_probability: 5, wind_speed: 5, humidity: 78 },
+  { condition: 'cloudy', cloud_coverage: 78, precipitation: 0, precipitation_probability: 5, wind_speed: 4, humidity: 85 },
+  // Hours 21-23: Fog rolling back in
+  { condition: 'fog', cloud_coverage: 90, precipitation: 0, precipitation_probability: 5, wind_speed: 3, humidity: 92 },
+  { condition: 'fog', cloud_coverage: 98, precipitation: 0, precipitation_probability: 5, wind_speed: 3, humidity: 95 },
+  { condition: 'fog', cloud_coverage: 100, precipitation: 0, precipitation_probability: 5, wind_speed: 3, humidity: 96 },
+];
+
+// ============================================================================
+// Pattern 9: All-Day Overcast
+// Persistent gray clouds, no precipitation, just gloomy
+// ============================================================================
+
+const allDayOvercastBase: BaseHourData[] = [
+  // All 24 hours: Persistent gray clouds
+  { condition: 'cloudy', cloud_coverage: 90, precipitation: 0, precipitation_probability: 15, wind_speed: 6, humidity: 70 },
+  { condition: 'cloudy', cloud_coverage: 92, precipitation: 0, precipitation_probability: 15, wind_speed: 6, humidity: 72 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 18, wind_speed: 7, humidity: 73 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 18, wind_speed: 7, humidity: 74 },
+  { condition: 'cloudy', cloud_coverage: 98, precipitation: 0, precipitation_probability: 20, wind_speed: 8, humidity: 75 },
+  { condition: 'cloudy', cloud_coverage: 100, precipitation: 0, precipitation_probability: 22, wind_speed: 8, humidity: 76 },
+  { condition: 'cloudy', cloud_coverage: 100, precipitation: 0, precipitation_probability: 22, wind_speed: 8, humidity: 75 },
+  { condition: 'cloudy', cloud_coverage: 100, precipitation: 0, precipitation_probability: 20, wind_speed: 9, humidity: 74 },
+  { condition: 'cloudy', cloud_coverage: 98, precipitation: 0, precipitation_probability: 18, wind_speed: 9, humidity: 72 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 18, wind_speed: 10, humidity: 70 },
+  { condition: 'cloudy', cloud_coverage: 92, precipitation: 0, precipitation_probability: 15, wind_speed: 10, humidity: 68 },
+  { condition: 'cloudy', cloud_coverage: 90, precipitation: 0, precipitation_probability: 15, wind_speed: 10, humidity: 66 },
+  { condition: 'cloudy', cloud_coverage: 88, precipitation: 0, precipitation_probability: 12, wind_speed: 9, humidity: 65 },
+  { condition: 'cloudy', cloud_coverage: 88, precipitation: 0, precipitation_probability: 12, wind_speed: 9, humidity: 65 },
+  { condition: 'cloudy', cloud_coverage: 90, precipitation: 0, precipitation_probability: 15, wind_speed: 8, humidity: 66 },
+  { condition: 'cloudy', cloud_coverage: 92, precipitation: 0, precipitation_probability: 15, wind_speed: 8, humidity: 68 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 18, wind_speed: 7, humidity: 70 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 18, wind_speed: 7, humidity: 72 },
+  { condition: 'cloudy', cloud_coverage: 98, precipitation: 0, precipitation_probability: 20, wind_speed: 6, humidity: 74 },
+  { condition: 'cloudy', cloud_coverage: 98, precipitation: 0, precipitation_probability: 20, wind_speed: 6, humidity: 75 },
+  { condition: 'cloudy', cloud_coverage: 100, precipitation: 0, precipitation_probability: 22, wind_speed: 6, humidity: 76 },
+  { condition: 'cloudy', cloud_coverage: 100, precipitation: 0, precipitation_probability: 22, wind_speed: 5, humidity: 76 },
+  { condition: 'cloudy', cloud_coverage: 98, precipitation: 0, precipitation_probability: 20, wind_speed: 5, humidity: 75 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0, precipitation_probability: 18, wind_speed: 5, humidity: 74 },
+];
+
+// ============================================================================
+// Pattern 10: Overnight Snow Clearing
+// Snow overnight → stops at dawn → clearing → sunny afternoon
+// ============================================================================
+
+const overnightSnowClearingBase: BaseHourData[] = [
+  // Hours 0-5: Snow overnight
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.25, precipitation_probability: 90, wind_speed: 12, humidity: 88 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.3, precipitation_probability: 92, wind_speed: 14, humidity: 90 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.3, precipitation_probability: 92, wind_speed: 14, humidity: 90 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.25, precipitation_probability: 88, wind_speed: 12, humidity: 88 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.2, precipitation_probability: 85, wind_speed: 10, humidity: 86 },
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.15, precipitation_probability: 80, wind_speed: 8, humidity: 85 },
+  // Hours 6-8: Snow stopping
+  { condition: 'snowy', cloud_coverage: 100, precipitation: 0.08, precipitation_probability: 60, wind_speed: 7, humidity: 84 },
+  { condition: 'cloudy', cloud_coverage: 95, precipitation: 0.02, precipitation_probability: 35, wind_speed: 6, humidity: 82 },
+  { condition: 'cloudy', cloud_coverage: 88, precipitation: 0, precipitation_probability: 20, wind_speed: 6, humidity: 78 },
+  // Hours 9-12: Clearing skies
+  { condition: 'cloudy', cloud_coverage: 75, precipitation: 0, precipitation_probability: 10, wind_speed: 6, humidity: 70 },
+  { condition: 'cloudy', cloud_coverage: 55, precipitation: 0, precipitation_probability: 8, wind_speed: 7, humidity: 62 },
+  { condition: 'partlycloudy', cloud_coverage: 38, precipitation: 0, precipitation_probability: 5, wind_speed: 7, humidity: 55 },
+  { condition: 'partlycloudy', cloud_coverage: 25, precipitation: 0, precipitation_probability: 5, wind_speed: 8, humidity: 50 },
+  // Hours 13-18: Sunny afternoon
+  { condition: 'sunny', cloud_coverage: 15, precipitation: 0, precipitation_probability: 0, wind_speed: 8, humidity: 45 },
+  { condition: 'sunny', cloud_coverage: 12, precipitation: 0, precipitation_probability: 0, wind_speed: 7, humidity: 42 },
+  { condition: 'sunny', cloud_coverage: 10, precipitation: 0, precipitation_probability: 0, wind_speed: 7, humidity: 42 },
+  { condition: 'sunny', cloud_coverage: 12, precipitation: 0, precipitation_probability: 0, wind_speed: 6, humidity: 44 },
+  { condition: 'sunny', cloud_coverage: 15, precipitation: 0, precipitation_probability: 0, wind_speed: 5, humidity: 46 },
+  { condition: 'partlycloudy', cloud_coverage: 18, precipitation: 0, precipitation_probability: 0, wind_speed: 4, humidity: 48 },
+  // Hours 19-23: Clear night
+  { condition: 'clear-night', cloud_coverage: 10, precipitation: 0, precipitation_probability: 0, wind_speed: 4, humidity: 52 },
+  { condition: 'clear-night', cloud_coverage: 8, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 55 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 58 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 60 },
+  { condition: 'clear-night', cloud_coverage: 5, precipitation: 0, precipitation_probability: 0, wind_speed: 3, humidity: 62 },
+];
+
+// ============================================================================
+// Create All Variations
+// ============================================================================
+
+export const buildingStorm = createAllVariations(buildingStormBase);
+export const fogAndThunderstorm = createAllVariations(fogAndThunderstormBase);
+export const rainyMorning = createAllVariations(rainyMorningBase);
+export const drizzleAndThunderstorms = createAllVariations(drizzleAndThunderstormsBase);
+export const perfectClear = createAllVariations(perfectClearBase);
+export const winterSnow = createAllVariations(winterSnowBase);
+export const coldFront = createAllVariations(coldFrontBase);
+export const marineLayer = createAllVariations(marineLayerBase);
+export const allDayOvercast = createAllVariations(allDayOvercastBase);
+export const overnightSnowClearing = createAllVariations(overnightSnowClearingBase);
+
+// Combined export for Storybook
+export const allScenarios = {
+  buildingStorm,
+  fogAndThunderstorm,
+  rainyMorning,
+  drizzleAndThunderstorms,
+  perfectClear,
+  winterSnow,
+  coldFront,
+  marineLayer,
+  allDayOvercast,
+  overnightSnowClearing,
+};
+
+// ============================================================================
+// Default Sun Times (for Storybook use)
+// ============================================================================
+
+export const defaultSunTimes: SunTimes = {
+  sunrise: new Date('2026-01-24T06:30:00'),
+  sunset: new Date('2026-01-24T17:30:00'),
+  dawn: new Date('2026-01-24T06:00:00'),
+  dusk: new Date('2026-01-24T18:00:00'),
+};
+
+// ============================================================================
+// Legacy Exports (for backward compatibility with existing stories)
+// ============================================================================
+
+export const sunnySkyHot = perfectClear.summer;
+export const sunnySkyMild = perfectClear.lateSpring;
+export const sunnySkyCold = perfectClear.winter;
+export const cloudySkyHot = allDayOvercast.summer;
+export const cloudySkyMild = allDayOvercast.lateSpring;
+export const cloudySkyCold = allDayOvercast.winter;
+export const rainyDayHot = rainyMorning.summer;
+export const rainyDayMild = rainyMorning.lateSpring;
+export const rainyDayCold = rainyMorning.winter;
+export const snowyDayMild = winterSnow.earlySpring;
+export const snowyDayCold = winterSnow.winter;
+export const mixedRainHot = drizzleAndThunderstorms.summer;
+export const mixedRainMild = drizzleAndThunderstorms.lateSpring;
+export const mixedRainCold = drizzleAndThunderstorms.winter;
